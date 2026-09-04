@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Recovery Copilot</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+
+    <h1>Recovery Copilot</h1>
+
+    <p>
+        AI-powered failed payment recovery dashboard
+    </p>
+
+
+    <!-- =========================
+         Payment Summary
+    ========================== -->
+
+    <div class="dashboard">
+
+        <div class="card">
+
+            <h3>Total Payments</h3>
+
+            <p id="total-payments">
+                0
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>Successful Payments</h3>
+
+            <p id="successful-payments">
+                0
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>Failed Payments</h3>
+
+            <p id="failed-payments">
+                0
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>Failure Rate</h3>
+
+            <p id="failure-rate">
+                0%
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>Revenue at Risk</h3>
+
+            <p id="revenue-at-risk">
+                ₹0
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>Potential Recovery</h3>
+
+            <p id="potential-recovery">
+                ₹0
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         Recovery Overview
+    ========================== -->
+
+    <section class="recovery-overview">
+
+        <div class="overview-header">
+
+            <div>
+
+                <span class="overview-badge">
+                    💰 RECOVERY INTELLIGENCE
+                </span>
+
+                <h2>
+                    Recovery Overview
+                </h2>
+
+                <p>
+                    Track simulated revenue recovery from failed payments.
+                </p>
+
+            </div>
+
+
+            <div class="simulation-badge">
+                🛡️ Simulation Mode
+            </div>
+
+        </div>
+
+
+        <div class="overview-metrics">
+
+
+            <div class="overview-card">
+
+                <span class="overview-icon">
+                    🎯
+                </span>
+
+                <div>
+
+                    <h3>
+                        Recovery Attempts
+                    </h3>
+
+                    <p id="overview-attempts">
+                        0
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="overview-card">
+
+                <span class="overview-icon">
+                    ✅
+                </span>
+
+                <div>
+
+                    <h3>
+                        Recovered Transactions
+                    </h3>
+
+                    <p id="overview-recovered-transactions">
+                        0
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="overview-card">
+
+                <span class="overview-icon">
+                    💰
+                </span>
+
+                <div>
+
+                    <h3>
+                        Recovered Amount
+                    </h3>
+
+                    <p id="overview-recovered-amount">
+                        ₹0
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="overview-card">
+
+                <span class="overview-icon">
+                    📈
+                </span>
+
+                <div>
+
+                    <h3>
+                        Recovery Rate
+                    </h3>
+
+                    <p id="overview-recovery-rate">
+                        0%
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         Recovery Opportunity
+    ========================== -->
+
+    <section class="recovery-opportunity">
+
+
+        <div class="section-header">
+
+
+            <div>
+
+                <span class="section-badge">
+                    💰 REVENUE RISK
+                </span>
+
+                <h2>
+                    Recovery Opportunity
+                </h2>
+
+                <p>
+                    Revenue at risk grouped by payment failure reason.
+                </p>
+
+            </div>
+
+
+            <div class="simulation-badge">
+                🛡️ Simulation Data
+            </div>
+
+
+        </div>
+
+
+        <!-- Dynamic chart -->
+
+        <div
+            class="opportunity-chart"
+            id="opportunity-chart">
+
+            <p>
+                Loading recovery opportunity...
+            </p>
+
+        </div>
+
+
+        <div class="opportunity-insight">
+
+            <span>
+                💡
+            </span>
+
+            <p>
+
+                <strong>
+                    Key insight:
+                </strong>
+
+                Bank timeouts represent the largest revenue risk,
+                while technical timeout failures are the safest
+                candidates for automated recovery.
+
+            </p>
+
+        </div>
+
+
+    </section>
+
+
+    <!-- =========================
+         Failure Analysis
+    ========================== -->
+
+    <section class="failures">
+
+        <h2>
+            Failure Analysis
+        </h2>
+
+
+        <div id="failures-container">
+
+            <p>
+                Loading failure analysis...
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         Recovery Recommendations
+    ========================== -->
+
+    <section class="recommendations">
+
+        <h2>
+            Recovery Recommendations
+        </h2>
+
+
+        <div id="recommendations-container">
+
+            <p>
+                Loading recommendations...
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         AI Recovery Analysis
+    ========================== -->
+
+    <section class="ai-analysis">
+
+
+        <div class="ai-header">
+
+
+            <div>
+
+                <span class="ai-badge">
+                    🤖 GEMINI AI
+                </span>
+
+
+                <h2>
+                    AI Recovery Analysis
+                </h2>
+
+
+                <p>
+                    AI analyzes failed payment patterns and
+                    recommends safe recovery strategies.
+                </p>
+
+            </div>
+
+
+            <div class="simulation-badge">
+                🛡️ Simulation Mode
+            </div>
+
+
+        </div>
+
+
+        <button
+            class="ai-button"
+            onclick="loadAIAnalysis()">
+
+            🤖 Run AI Analysis
+
+        </button>
+
+
+        <div id="ai-analysis-container">
+
+
+            <div class="ai-empty">
+
+
+                <div class="ai-empty-icon">
+                    ✨
+                </div>
+
+
+                <h3>
+                    Ready for AI Analysis
+                </h3>
+
+
+                <p>
+                    Click the button to let Gemini analyze
+                    the failed payment patterns.
+                </p>
+
+
+            </div>
+
+
+        </div>
+
+
+    </section>
+
+
+    <!-- =========================
+         Recovery Result
+    ========================== -->
+
+    <section class="recovery-result">
+
+
+        <h2>
+            Recovery Result
+        </h2>
+
+
+        <div id="recovery-result-container">
+
+            <p>
+                No recovery action executed yet.
+            </p>
+
+        </div>
+
+
+    </section>
+
+
+    <!-- =========================
+         Batch Recovery
+    ========================== -->
+
+    <section class="batch-recovery">
+
+
+        <h2>
+            AI Recovery Control
+        </h2>
+
+
+        <p>
+            Run recovery actions on eligible failed payments
+            using safety rules and simulation mode.
+        </p>
+
+
+        <button
+            id="batch-recovery-button"
+            onclick="runBatchRecovery()">
+
+            Run Recovery Batch
+
+        </button>
+
+
+        <div id="batch-recovery-result">
+
+            <p>
+                No batch recovery executed yet.
+            </p>
+
+        </div>
+
+
+    </section>
+
+
+    <!-- =========================
+         Recovery Performance
+    ========================== -->
+
+    <section class="recovery-performance">
+
+
+        <h2>
+            Recovery Performance
+        </h2>
+
+
+        <div class="recovery-metrics">
+
+
+            <div class="metric-card">
+
+                <h3>
+                    Recovery Attempts
+                </h3>
+
+                <p id="recovery-attempts">
+                    0
+                </p>
+
+            </div>
+
+
+            <div class="metric-card">
+
+                <h3>
+                    Recovered Transactions
+                </h3>
+
+                <p id="recovered-transactions">
+                    0
+                </p>
+
+            </div>
+
+
+            <div class="metric-card">
+
+                <h3>
+                    Recovered Amount
+                </h3>
+
+                <p id="recovered-amount">
+                    ₹0
+                </p>
+
+            </div>
+
+
+            <div class="metric-card">
+
+                <h3>
+                    Recovery Rate
+                </h3>
+
+                <p id="recovery-rate">
+                    0%
+                </p>
+
+            </div>
+
+
+        </div>
+
+
+    </section>
+
+
+    <!-- =========================
+         Audit Trail
+    ========================== -->
+
+    <section class="audit">
+
+
+        <h2>
+            Audit Trail
+        </h2>
+
+
+        <div id="audit-container">
+
+            <p>
+                Loading audit logs...
+            </p>
+
+        </div>
+
+
+    </section>
+
+
+    <!-- =========================
+         JavaScript
+    ========================== -->
+
+    <script src="script.js"></script>
+
+
+</body>
+
+</html>
