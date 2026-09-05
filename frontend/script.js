@@ -2,42 +2,33 @@
 // API URLs
 // ============================================================
 
-const API_URL = "http://127.0.0.1:5000/api/summary";
-const RECOMMENDATIONS_URL = "http://127.0.0.1:5000/api/recommendations";
-const FAILURES_URL = "http://127.0.0.1:5000/api/failures";
-const PAYMENTS_URL = "http://127.0.0.1:5000/api/payments";
-const RECOVER_URL = "http://127.0.0.1:5000/api/recover";
-const AUDIT_URL = "http://127.0.0.1:5000/api/audit";
-const RECOVERY_METRICS_URL = "http://127.0.0.1:5000/api/recovery-metrics";
-const BATCH_RECOVERY_URL = "http://127.0.0.1:5000/api/recover-batch";
-const AI_ANALYSIS_URL = "http://127.0.0.1:5000/api/ai-analysis";
+const API_URL = "/api/summary";
+const RECOMMENDATIONS_URL = "/api/recommendations";
+const FAILURES_URL = "/api/failures";
+const PAYMENTS_URL = "/api/payments";
+const RECOVER_URL = "/api/recover";
+const AUDIT_URL = "/api/audit";
+const RECOVERY_METRICS_URL = "/api/recovery-metrics";
+const BATCH_RECOVERY_URL = "/api/recover-batch";
+const AI_ANALYSIS_URL = "/api/ai-analysis";
 
 // ============================================================
 // Dataset URLs
 // ============================================================
 
-const UPLOAD_URL = "http://127.0.0.1:5000/api/upload";
-const RESET_DEMO_URL = "http://127.0.0.1:5000/api/reset-demo";
-const DATASET_URL = "http://127.0.0.1:5000/api/dataset";
+const UPLOAD_URL = "/api/upload";
+const RESET_DEMO_URL = "/api/reset-demo";
+const DATASET_URL = "/api/dataset";
 
 // ============================================================
 // Razorpay Test Mode URLs
 // ============================================================
 
-const RAZORPAY_CONFIG_URL =
-    "http://127.0.0.1:5000/api/razorpay/config";
-
-const RAZORPAY_CREATE_ORDER_URL =
-    "http://127.0.0.1:5000/api/razorpay/create-order";
-
-const RAZORPAY_VERIFY_URL =
-    "http://127.0.0.1:5000/api/razorpay/verify-payment";
-
-const RAZORPAY_FAILED_URL =
-    "http://127.0.0.1:5000/api/razorpay/payment-failed";
-
-const RAZORPAY_TRANSACTIONS_URL =
-    "http://127.0.0.1:5000/api/razorpay/transactions";
+const RAZORPAY_CONFIG_URL = "/api/razorpay/config";
+const RAZORPAY_CREATE_ORDER_URL = "/api/razorpay/create-order";
+const RAZORPAY_VERIFY_URL = "/api/razorpay/verify-payment";
+const RAZORPAY_FAILED_URL = "/api/razorpay/payment-failed";
+const RAZORPAY_TRANSACTIONS_URL = "/api/razorpay/transactions";
 
 // ============================================================
 // Razorpay Current Transaction State
@@ -78,28 +69,14 @@ function cleanAIText(text) {
     }
 
     return String(text)
-        // Remove markdown headings
         .replace(/^#{1,6}\s*/gm, "")
-
-        // Remove bold / italic markdown
         .replace(/\*\*(.*?)\*\*/g, "$1")
         .replace(/\*(.*?)\*/g, "$1")
-
-        // Remove escaped asterisks
         .replace(/\\\*/g, "")
-
-        // Remove backticks
         .replace(/`/g, "")
-
-        // Remove markdown horizontal lines
         .replace(/^[-_]{3,}$/gm, "")
-
-        // Remove excessive spaces
         .replace(/[ \t]+/g, " ")
-
-        // Convert multiple new lines to one space
         .replace(/\n+/g, " ")
-
         .trim();
 }
 
@@ -109,7 +86,6 @@ function cleanAIText(text) {
 
 function loadRazorpayCheckout() {
     return new Promise((resolve, reject) => {
-
         if (window.Razorpay) {
             resolve();
             return;
@@ -124,9 +100,7 @@ function loadRazorpayCheckout() {
 
             existingScript.onerror = () => {
                 reject(
-                    new Error(
-                        "Could not load Razorpay Checkout."
-                    )
+                    new Error("Could not load Razorpay Checkout.")
                 );
             };
 
@@ -142,9 +116,7 @@ function loadRazorpayCheckout() {
 
         script.onerror = () => {
             reject(
-                new Error(
-                    "Could not load Razorpay Checkout."
-                )
+                new Error("Could not load Razorpay Checkout.")
             );
         };
 
@@ -157,7 +129,6 @@ function loadRazorpayCheckout() {
 // ============================================================
 
 async function startRazorpayTestPayment() {
-
     const button = document.getElementById(
         "razorpay-test-button"
     );
@@ -168,7 +139,6 @@ async function startRazorpayTestPayment() {
     }
 
     try {
-
         await loadRazorpayCheckout();
 
         // ----------------------------------------------------
@@ -233,9 +203,7 @@ async function startRazorpayTestPayment() {
         // Store current order
         // ----------------------------------------------------
 
-        currentRazorpayOrderId =
-            orderData.order_id;
-
+        currentRazorpayOrderId = orderData.order_id;
         currentRazorpayAmount = 2999;
 
         // ----------------------------------------------------
@@ -243,11 +211,8 @@ async function startRazorpayTestPayment() {
         // ----------------------------------------------------
 
         const options = {
-
             key: orderData.key_id,
-
             amount: orderData.amount,
-
             currency: orderData.currency || "INR",
 
             name: "Recovery Copilot",
@@ -257,14 +222,11 @@ async function startRazorpayTestPayment() {
             order_id: orderData.order_id,
 
             handler: async function (response) {
-
                 await handleRazorpaySuccess(response);
             },
 
             modal: {
-
                 ondismiss: function () {
-
                     resetRazorpayButton();
 
                     console.log(
@@ -291,7 +253,6 @@ async function startRazorpayTestPayment() {
         razorpay.on(
             "payment.failed",
             async function (response) {
-
                 await handleRazorpayFailure(response);
             }
         );
@@ -301,10 +262,9 @@ async function startRazorpayTestPayment() {
         // ----------------------------------------------------
 
         razorpay.open();
-
     }
-    catch (error) {
 
+    catch (error) {
         console.error(
             "Razorpay Test Payment Error:",
             error
@@ -324,18 +284,17 @@ async function startRazorpayTestPayment() {
 // ============================================================
 
 async function handleRazorpaySuccess(response) {
-
     try {
-
         const verifyResponse = await fetch(
             RAZORPAY_VERIFY_URL,
             {
                 method: "POST",
+
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
 
+                body: JSON.stringify({
                     razorpay_order_id:
                         response.razorpay_order_id,
 
@@ -357,7 +316,6 @@ async function handleRazorpaySuccess(response) {
         const data = await verifyResponse.json();
 
         if (data.success) {
-
             alert(
                 "Razorpay Test Payment Successful!\n\n" +
                 "Payment ID: " +
@@ -365,10 +323,9 @@ async function handleRazorpaySuccess(response) {
                 "\n\n" +
                 "This was a TEST MODE payment."
             );
-
         }
-        else {
 
+        else {
             alert(
                 "Payment received but verification failed."
             );
@@ -377,10 +334,9 @@ async function handleRazorpaySuccess(response) {
         await loadRecoveryMetrics();
         await loadAuditTrail();
         await loadRazorpayTransactions();
-
     }
-    catch (error) {
 
+    catch (error) {
         console.error(
             "Payment verification error:",
             error
@@ -390,14 +346,12 @@ async function handleRazorpaySuccess(response) {
             "Payment verification failed.\n\n" +
             error.message
         );
-
     }
-    finally {
 
+    finally {
         resetRazorpayButton();
 
         currentRazorpayOrderId = "";
-
         currentRazorpayAmount = 2999;
     }
 }
@@ -407,14 +361,12 @@ async function handleRazorpaySuccess(response) {
 // ============================================================
 
 async function handleRazorpayFailure(response) {
-
     console.log(
         "Razorpay test payment failed:",
         response
     );
 
-    const paymentError =
-        response.error || {};
+    const paymentError = response.error || {};
 
     const paymentId =
         paymentError.metadata?.payment_id ||
@@ -431,7 +383,6 @@ async function handleRazorpayFailure(response) {
     const reason = "bank_timeout";
 
     try {
-
         const failureResponse = await fetch(
             RAZORPAY_FAILED_URL,
             {
@@ -442,30 +393,24 @@ async function handleRazorpayFailure(response) {
                 },
 
                 body: JSON.stringify({
-
                     payment_id: paymentId,
-
                     order_id: orderId,
-
                     amount: currentRazorpayAmount,
-
                     failure_reason: reason,
-
                     status: "failed",
-
                     source: "razorpay_test_mode"
                 })
             }
         );
 
         if (!failureResponse.ok) {
-
             let errorData = {};
 
             try {
                 errorData =
                     await failureResponse.json();
             }
+
             catch {
                 errorData = {};
             }
@@ -485,9 +430,7 @@ async function handleRazorpayFailure(response) {
         );
 
         await loadRecoveryMetrics();
-
         await loadAuditTrail();
-
         await loadRazorpayTransactions();
 
         const statusText =
@@ -503,49 +446,35 @@ async function handleRazorpayFailure(response) {
 
         alert(
             "Razorpay Test Payment Failed.\n\n" +
-
             "Recovery Copilot detected the failed payment.\n\n" +
-
             "Recovery Action: " +
             formatReason(actionText) +
-
             "\n\n" +
-
             "Status: " +
             formatReason(statusText) +
-
             "\n\n" +
-
             "Retry Count: " +
             retryCount +
-
             "\n\n" +
-
             "Reason: " +
             formatReason(reason) +
-
             "\n\n" +
-
             "TEST MODE — No real money was processed."
         );
-
     }
-    catch (error) {
 
+    catch (error) {
         console.error(
             "Failed payment logging error:",
             error
         );
 
         try {
-
             await loadRecoveryMetrics();
-
             await loadAuditTrail();
-
         }
-        catch (refreshError) {
 
+        catch (refreshError) {
             console.error(
                 "Dashboard refresh error:",
                 refreshError
@@ -557,14 +486,12 @@ async function handleRazorpayFailure(response) {
             "could not record the event.\n\n" +
             error.message
         );
-
     }
-    finally {
 
+    finally {
         resetRazorpayButton();
 
         currentRazorpayOrderId = "";
-
         currentRazorpayAmount = 2999;
     }
 }
@@ -574,9 +501,7 @@ async function handleRazorpayFailure(response) {
 // ============================================================
 
 async function loadRazorpayTransactions() {
-
     try {
-
         const response = await fetch(
             RAZORPAY_TRANSACTIONS_URL,
             {
@@ -598,10 +523,9 @@ async function loadRazorpayTransactions() {
         );
 
         return data;
-
     }
-    catch (error) {
 
+    catch (error) {
         console.log(
             "Razorpay transactions error:",
             error
@@ -616,14 +540,12 @@ async function loadRazorpayTransactions() {
 // ============================================================
 
 function resetRazorpayButton() {
-
     const button =
         document.getElementById(
             "razorpay-test-button"
         );
 
     if (button) {
-
         button.disabled = false;
 
         button.textContent =
@@ -636,7 +558,6 @@ function resetRazorpayButton() {
 // ============================================================
 
 function setupRazorpayButton() {
-
     const button =
         document.getElementById(
             "razorpay-test-button"
@@ -657,9 +578,7 @@ function setupRazorpayButton() {
 // ============================================================
 
 async function loadDatasetInfo() {
-
     try {
-
         const response = await fetch(
             DATASET_URL,
             {
@@ -686,10 +605,9 @@ async function loadDatasetInfo() {
             "dataset-total",
             data.total_payments || 0
         );
-
     }
-    catch (error) {
 
+    catch (error) {
         console.log(
             "Error loading dataset information:",
             error
@@ -702,7 +620,6 @@ async function loadDatasetInfo() {
 // ============================================================
 
 function uploadPaymentCSV() {
-
     const fileInput =
         document.getElementById(
             "payment-csv"
@@ -722,7 +639,6 @@ function uploadPaymentCSV() {
         !fileInput ||
         !fileInput.files.length
     ) {
-
         if (message) {
             message.textContent =
                 "Please choose a CSV file first.";
@@ -739,7 +655,6 @@ function uploadPaymentCSV() {
             .toLowerCase()
             .endsWith(".csv")
     ) {
-
         if (message) {
             message.textContent =
                 "Please upload a CSV file.";
@@ -757,7 +672,6 @@ function uploadPaymentCSV() {
     );
 
     if (uploadButton) {
-
         uploadButton.disabled = true;
 
         uploadButton.textContent =
@@ -765,7 +679,6 @@ function uploadPaymentCSV() {
     }
 
     if (message) {
-
         message.textContent =
             "Uploading and analyzing your dataset...";
     }
@@ -777,13 +690,12 @@ function uploadPaymentCSV() {
             body: formData
         }
     )
-        .then(async response => {
 
+        .then(async response => {
             const data =
                 await response.json();
 
             if (!response.ok) {
-
                 throw new Error(
                     data.message ||
                     "Dataset upload failed."
@@ -792,12 +704,10 @@ function uploadPaymentCSV() {
 
             return data;
         })
+
         .then(data => {
-
             if (!data.success) {
-
                 if (message) {
-
                     message.textContent =
                         data.message ||
                         "Dataset upload failed.";
@@ -807,7 +717,6 @@ function uploadPaymentCSV() {
             }
 
             if (message) {
-
                 message.textContent =
                     "Dataset uploaded successfully!";
             }
@@ -815,29 +724,24 @@ function uploadPaymentCSV() {
             fileInput.value = "";
 
             loadDatasetInfo();
-
             refreshDashboard();
-
             loadAIAnalysis();
         })
-        .catch(error => {
 
+        .catch(error => {
             console.log(
                 "Dataset upload error:",
                 error
             );
 
             if (message) {
-
                 message.textContent =
                     "Could not connect to the server.";
             }
-
         })
+
         .finally(() => {
-
             if (uploadButton) {
-
                 uploadButton.disabled = false;
 
                 uploadButton.textContent =
@@ -851,7 +755,6 @@ function uploadPaymentCSV() {
 // ============================================================
 
 function resetDemoDataset() {
-
     const button =
         document.getElementById(
             "reset-demo-button"
@@ -863,7 +766,6 @@ function resetDemoDataset() {
         );
 
     if (button) {
-
         button.disabled = true;
 
         button.textContent =
@@ -871,7 +773,6 @@ function resetDemoDataset() {
     }
 
     if (message) {
-
         message.textContent =
             "Switching to demo dataset...";
     }
@@ -889,13 +790,12 @@ function resetDemoDataset() {
             body: JSON.stringify({})
         }
     )
-        .then(async response => {
 
+        .then(async response => {
             const data =
                 await response.json();
 
             if (!response.ok) {
-
                 throw new Error(
                     data.message ||
                     "Could not load demo dataset."
@@ -904,12 +804,10 @@ function resetDemoDataset() {
 
             return data;
         })
+
         .then(data => {
-
             if (!data.success) {
-
                 if (message) {
-
                     message.textContent =
                         data.message ||
                         "Could not load demo dataset.";
@@ -919,35 +817,29 @@ function resetDemoDataset() {
             }
 
             if (message) {
-
                 message.textContent =
                     "Demo dataset loaded.";
             }
 
             loadDatasetInfo();
-
             refreshDashboard();
-
             loadAIAnalysis();
         })
-        .catch(error => {
 
+        .catch(error => {
             console.log(
                 "Demo dataset error:",
                 error
             );
 
             if (message) {
-
                 message.textContent =
                     "Could not connect to the server.";
             }
-
         })
+
         .finally(() => {
-
             if (button) {
-
                 button.disabled = false;
 
                 button.textContent =
@@ -961,21 +853,13 @@ function resetDemoDataset() {
 // ============================================================
 
 function refreshDashboard() {
-
     loadPaymentSummary();
-
     loadFailedPayments();
-
     loadRecommendations();
-
     loadFailureAnalysis();
-
     loadRecoveryMetrics();
-
     loadAuditTrail();
-
     loadOpportunityChart();
-
     loadDatasetInfo();
 }
 
@@ -984,9 +868,7 @@ function refreshDashboard() {
 // ============================================================
 
 async function loadPaymentSummary() {
-
     try {
-
         const response =
             await fetch(
                 API_URL,
@@ -996,7 +878,6 @@ async function loadPaymentSummary() {
             );
 
         if (!response.ok) {
-
             throw new Error(
                 "Payment summary request failed."
             );
@@ -1038,10 +919,9 @@ async function loadPaymentSummary() {
                 data.potential_recovery
             )
         );
-
     }
-    catch (error) {
 
+    catch (error) {
         console.log(
             "Error loading payment summary:",
             error
@@ -1054,9 +934,7 @@ async function loadPaymentSummary() {
 // ============================================================
 
 async function loadFailedPayments() {
-
     try {
-
         const response =
             await fetch(
                 PAYMENTS_URL,
@@ -1066,7 +944,6 @@ async function loadFailedPayments() {
             );
 
         if (!response.ok) {
-
             throw new Error(
                 "Could not load failed payments."
             );
@@ -1103,7 +980,6 @@ async function loadFailedPayments() {
         container.appendChild(info);
 
         samplePayments.forEach(payment => {
-
             const card =
                 document.createElement("div");
 
@@ -1153,10 +1029,9 @@ async function loadFailedPayments() {
 
             container.appendChild(card);
         });
-
     }
-    catch (error) {
 
+    catch (error) {
         console.log(
             "Error loading failed payments:",
             error
@@ -1168,7 +1043,6 @@ async function loadFailedPayments() {
             );
 
         if (container) {
-
             container.innerHTML = `
                 <p>
                     Unable to load failed payments.
@@ -1183,9 +1057,7 @@ async function loadFailedPayments() {
 // ============================================================
 
 async function loadRecommendations() {
-
     try {
-
         const response =
             await fetch(
                 RECOMMENDATIONS_URL,
@@ -1195,7 +1067,6 @@ async function loadRecommendations() {
             );
 
         if (!response.ok) {
-
             throw new Error(
                 "Could not load recommendations."
             );
@@ -1216,7 +1087,6 @@ async function loadRecommendations() {
         container.innerHTML = "";
 
         for (const reason in data) {
-
             const recommendation =
                 data[reason];
 
@@ -1249,10 +1119,9 @@ async function loadRecommendations() {
 
             container.appendChild(card);
         }
-
     }
-    catch (error) {
 
+    catch (error) {
         console.log(
             "Error loading recommendations:",
             error
@@ -1265,9 +1134,7 @@ async function loadRecommendations() {
 // ============================================================
 
 async function loadOpportunityChart() {
-
     try {
-
         const response =
             await fetch(
                 FAILURES_URL,
@@ -1277,7 +1144,6 @@ async function loadOpportunityChart() {
             );
 
         if (!response.ok) {
-
             throw new Error(
                 "Could not load failure data."
             );
@@ -1294,7 +1160,6 @@ async function loadOpportunityChart() {
         const totals = {};
 
         payments.forEach(payment => {
-
             const reason =
                 payment.failure_reason ||
                 "unknown";
@@ -1331,7 +1196,6 @@ async function loadOpportunityChart() {
         }
 
         if (entries.length === 0) {
-
             container.innerHTML = `
                 <p>
                     No recovery opportunity data available.
@@ -1345,7 +1209,6 @@ async function loadOpportunityChart() {
             entries
                 .map(
                     ([reason, amount]) => {
-
                         const width =
                             (amount / maxAmount) *
                             100;
@@ -1382,10 +1245,9 @@ async function loadOpportunityChart() {
                     }
                 )
                 .join("");
-
     }
-    catch (error) {
 
+    catch (error) {
         console.error(
             "Opportunity chart error:",
             error
@@ -1397,7 +1259,6 @@ async function loadOpportunityChart() {
             );
 
         if (container) {
-
             container.innerHTML = `
                 <p>
                     Unable to load recovery opportunity data.
@@ -1412,7 +1273,6 @@ async function loadOpportunityChart() {
 // ============================================================
 
 async function loadAIAnalysis() {
-
     const container =
         document.getElementById(
             "ai-analysis-container"
@@ -1440,7 +1300,6 @@ async function loadAIAnalysis() {
     `;
 
     try {
-
         const response =
             await fetch(
                 AI_ANALYSIS_URL,
@@ -1450,7 +1309,6 @@ async function loadAIAnalysis() {
             );
 
         if (!response.ok) {
-
             throw new Error(
                 "AI analysis request failed."
             );
@@ -1460,7 +1318,6 @@ async function loadAIAnalysis() {
             await response.json();
 
         if (!data.success) {
-
             container.innerHTML = `
                 <div class="ai-error">
 
@@ -1482,10 +1339,6 @@ async function loadAIAnalysis() {
         const analysis =
             String(data.analysis || "");
 
-        // ----------------------------------------------------
-        // Clean entire AI response first
-        // ----------------------------------------------------
-
         const cleanedAnalysis =
             analysis
                 .replace(/\r/g, "")
@@ -1496,15 +1349,10 @@ async function loadAIAnalysis() {
                 .replace(/^[-_]{3,}$/gm, "")
                 .trim();
 
-        // ----------------------------------------------------
-        // Extract sections
-        // ----------------------------------------------------
-
         function extractSection(
             title,
             nextTitle
         ) {
-
             const normalized =
                 cleanedAnalysis.toUpperCase();
 
@@ -1524,7 +1372,6 @@ async function loadAIAnalysis() {
                 cleanedAnalysis.length;
 
             if (nextTitle) {
-
                 const nextIndex =
                     normalized.indexOf(
                         nextTitle.toUpperCase(),
@@ -1574,12 +1421,7 @@ async function loadAIAnalysis() {
                 null
             );
 
-        // ----------------------------------------------------
-        // Render AI report
-        // ----------------------------------------------------
-
         container.innerHTML = `
-
             <div class="ai-result">
 
                 <div class="ai-result-header">
@@ -1624,7 +1466,6 @@ async function loadAIAnalysis() {
 
                     </div>
 
-
                     <div class="ai-insight-card recovery-card">
 
                         <div class="insight-icon">
@@ -1645,7 +1486,6 @@ async function loadAIAnalysis() {
 
                     </div>
 
-
                     <div class="ai-insight-card strategy-card">
 
                         <div class="insight-icon">
@@ -1665,7 +1505,6 @@ async function loadAIAnalysis() {
                         </div>
 
                     </div>
-
 
                     <div class="ai-insight-card safety-card">
 
@@ -1689,7 +1528,6 @@ async function loadAIAnalysis() {
 
                 </div>
 
-
                 <div class="ai-explanation">
 
                     <h4>
@@ -1701,7 +1539,6 @@ async function loadAIAnalysis() {
                     </p>
 
                 </div>
-
 
                 <div class="simulation-notice">
 
@@ -1719,17 +1556,15 @@ async function loadAIAnalysis() {
 
             </div>
         `;
-
     }
-    catch (error) {
 
+    catch (error) {
         console.log(
             "AI analysis error:",
             error
         );
 
         container.innerHTML = `
-
             <div class="ai-error">
 
                 <h3>
@@ -1753,26 +1588,19 @@ function executeRecovery(
     paymentId,
     failureReason
 ) {
-
     let resultContainer =
         document.getElementById(
             "recovery-result-container"
         );
 
     if (!resultContainer) {
-
         resultContainer =
             document.getElementById(
                 "batch-recovery-result"
             );
     }
 
-    // --------------------------------------------------------
-    // If no result container exists, create one
-    // --------------------------------------------------------
-
     if (!resultContainer) {
-
         resultContainer =
             document.createElement("div");
 
@@ -1788,13 +1616,12 @@ function executeRecovery(
             );
 
         if (failuresContainer) {
-
             failuresContainer.prepend(
                 resultContainer
             );
         }
-        else {
 
+        else {
             document.body.prepend(
                 resultContainer
             );
@@ -1802,12 +1629,10 @@ function executeRecovery(
     }
 
     resultContainer.innerHTML = `
-
         <p>
             Executing recovery action for
             <strong>${paymentId}</strong>...
         </p>
-
     `;
 
     fetch(
@@ -1821,7 +1646,6 @@ function executeRecovery(
             },
 
             body: JSON.stringify({
-
                 payment_id:
                     paymentId,
 
@@ -1836,13 +1660,12 @@ function executeRecovery(
             })
         }
     )
-        .then(async response => {
 
+        .then(async response => {
             const data =
                 await response.json();
 
             if (!response.ok) {
-
                 throw new Error(
                     data.message ||
                     "Recovery request failed."
@@ -1851,12 +1674,10 @@ function executeRecovery(
 
             return data;
         })
+
         .then(data => {
-
             if (data.success) {
-
                 resultContainer.innerHTML = `
-
                     <h3>
                         Recovery Action Executed
                     </h3>
@@ -1884,13 +1705,11 @@ function executeRecovery(
                     <p>
                         ${data.message || ""}
                     </p>
-
                 `;
             }
+
             else {
-
                 resultContainer.innerHTML = `
-
                     <h3>
                         Recovery Action Blocked
                     </h3>
@@ -1906,24 +1725,20 @@ function executeRecovery(
                         ${data.message ||
                         "Recovery action was blocked."}
                     </p>
-
                 `;
             }
 
             loadRecoveryMetrics();
-
             loadAuditTrail();
-
         })
-        .catch(error => {
 
+        .catch(error => {
             console.log(
                 "Recovery error:",
                 error
             );
 
             resultContainer.innerHTML = `
-
                 <h3>
                     Recovery Failed
                 </h3>
@@ -1932,7 +1747,6 @@ function executeRecovery(
                     ${error.message ||
                     "Could not connect to the recovery server."}
                 </p>
-
             `;
         });
 }
@@ -1946,7 +1760,6 @@ window.executeRecovery =
 // ============================================================
 
 function runBatchRecovery() {
-
     const button =
         document.getElementById(
             "batch-recovery-button"
@@ -1961,7 +1774,6 @@ function runBatchRecovery() {
         !button ||
         !resultContainer
     ) {
-
         console.log(
             "Batch recovery HTML elements were not found."
         );
@@ -1975,12 +1787,10 @@ function runBatchRecovery() {
         "Running Recovery Batch...";
 
     resultContainer.innerHTML = `
-
         <p>
             Analyzing eligible failed payments and
             running recovery simulation...
         </p>
-
     `;
 
     fetch(
@@ -1996,13 +1806,12 @@ function runBatchRecovery() {
             body: JSON.stringify({})
         }
     )
-        .then(async response => {
 
+        .then(async response => {
             const data =
                 await response.json();
 
             if (!response.ok) {
-
                 throw new Error(
                     data.message ||
                     "Batch recovery request failed."
@@ -2011,12 +1820,10 @@ function runBatchRecovery() {
 
             return data;
         })
+
         .then(data => {
-
             if (data.success) {
-
                 resultContainer.innerHTML = `
-
                     <h3>
                         Batch Recovery Completed
                     </h3>
@@ -2069,13 +1876,11 @@ function runBatchRecovery() {
                         <strong>Simulation Mode:</strong>
                         No real payments were processed.
                     </p>
-
                 `;
             }
+
             else {
-
                 resultContainer.innerHTML = `
-
                     <h3>
                         Batch Recovery Failed
                     </h3>
@@ -2084,26 +1889,21 @@ function runBatchRecovery() {
                         ${data.message ||
                         "Batch recovery could not be completed."}
                     </p>
-
                 `;
             }
 
             loadPaymentSummary();
-
             loadRecoveryMetrics();
-
             loadAuditTrail();
-
         })
-        .catch(error => {
 
+        .catch(error => {
             console.log(
                 "Batch recovery error:",
                 error
             );
 
             resultContainer.innerHTML = `
-
                 <h3>
                     Batch Recovery Failed
                 </h3>
@@ -2112,12 +1912,10 @@ function runBatchRecovery() {
                     ${error.message ||
                     "Could not connect to the recovery server."}
                 </p>
-
             `;
-
         })
-        .finally(() => {
 
+        .finally(() => {
             button.disabled = false;
 
             button.textContent =
@@ -2130,9 +1928,7 @@ function runBatchRecovery() {
 // ============================================================
 
 async function loadRecoveryMetrics() {
-
     try {
-
         const response =
             await fetch(
                 RECOVERY_METRICS_URL +
@@ -2144,7 +1940,6 @@ async function loadRecoveryMetrics() {
             );
 
         if (!response.ok) {
-
             throw new Error(
                 "Recovery metrics request failed."
             );
@@ -2213,10 +2008,9 @@ async function loadRecoveryMetrics() {
                 data.recovery_rate ?? 0
             ) + "%"
         );
-
     }
-    catch (error) {
 
+    catch (error) {
         console.error(
             "Error loading recovery metrics:",
             error
@@ -2229,14 +2023,11 @@ async function loadRecoveryMetrics() {
 // ============================================================
 
 async function loadAuditTrail() {
-
     try {
-
         const [
             auditResponse,
             metricsResponse
         ] = await Promise.all([
-
             fetch(
                 AUDIT_URL +
                 "?t=" +
@@ -2260,7 +2051,6 @@ async function loadAuditTrail() {
             !auditResponse.ok ||
             !metricsResponse.ok
         ) {
-
             throw new Error(
                 "Could not load audit information."
             );
@@ -2344,7 +2134,6 @@ async function loadAuditTrail() {
 
         const recoveryLogs =
             logs.filter(log => {
-
                 const action =
                     String(
                         log.action || ""
@@ -2353,7 +2142,6 @@ async function loadAuditTrail() {
                 return (
                     action !==
                         "ai_revenue_analysis" &&
-
                     action !==
                         "ai_analysis"
                 );
@@ -2374,20 +2162,16 @@ async function loadAuditTrail() {
         if (
             latestLogs.length === 0
         ) {
-
             container.innerHTML = `
-
                 <p>
                     No recovery actions recorded yet.
                 </p>
-
             `;
 
             return;
         }
 
         latestLogs.forEach(log => {
-
             const card =
                 document.createElement("div");
 
@@ -2407,7 +2191,6 @@ async function loadAuditTrail() {
                 );
 
             card.innerHTML = `
-
                 <h3>
                     ${action}
                 </h3>
@@ -2434,15 +2217,13 @@ async function loadAuditTrail() {
                     <strong>Time:</strong>
                     ${log.timestamp || "N/A"}
                 </p>
-
             `;
 
             container.appendChild(card);
         });
-
     }
-    catch (error) {
 
+    catch (error) {
         console.error(
             "Error loading audit trail:",
             error
@@ -2454,13 +2235,10 @@ async function loadAuditTrail() {
             );
 
         if (container) {
-
             container.innerHTML = `
-
                 <p>
                     Unable to load audit logs.
                 </p>
-
             `;
         }
     }
@@ -2471,9 +2249,7 @@ async function loadAuditTrail() {
 // ============================================================
 
 async function loadFailureAnalysis() {
-
     try {
-
         const response =
             await fetch(
                 FAILURES_URL,
@@ -2483,7 +2259,6 @@ async function loadFailureAnalysis() {
             );
 
         if (!response.ok) {
-
             throw new Error(
                 "Could not load failure analysis."
             );
@@ -2496,10 +2271,9 @@ async function loadFailureAnalysis() {
             "Failure analysis loaded:",
             data
         );
-
     }
-    catch (error) {
 
+    catch (error) {
         console.log(
             "Error loading failure analysis:",
             error
@@ -2514,7 +2288,6 @@ async function loadFailureAnalysis() {
 document.addEventListener(
     "DOMContentLoaded",
     function () {
-
         setupRazorpayButton();
 
         refreshDashboard();
@@ -2524,3 +2297,4 @@ document.addEventListener(
         loadRazorpayTransactions();
     }
 );
+
