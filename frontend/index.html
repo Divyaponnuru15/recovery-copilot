@@ -1,60 +1,45 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
 
-    <title>Recovery Copilot</title>
+<title>Recovery Copilot</title>
 
-    <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css">
+
+
 </head>
 
 <body>
 
-<!-- =========================
-     HEADER
-========================== -->
-
 <header class="topbar">
 
-    <div class="brand">
 
-        <div class="brand-icon">
-            ↻
-        </div>
+<div class="brand">
+    <div class="brand-icon">↻</div>
 
-        <div>
-            <h1>Recovery Copilot</h1>
-
-            <p>
-                AI-powered revenue recovery for failed payments
-            </p>
-        </div>
-
+    <div>
+        <h1>Recovery Copilot</h1>
+        <p>AI-powered revenue recovery for failed payments</p>
     </div>
+</div>
 
-    <div class="topbar-status">
+<div class="topbar-status">
+    <span class="status-dot"></span>
+    <span>TEST MODE</span>
+</div>
 
-        <span class="status-dot"></span>
-
-        <span>
-            TEST MODE
-        </span>
-
-    </div>
 
 </header>
 
-
 <main>
 
-
-<!-- =========================
-     HERO / RAZORPAY CONTROL
-========================== -->
+```
+<!-- HERO -->
 
 <section class="hero-panel">
 
@@ -78,17 +63,13 @@
             <button
                 class="primary-button"
                 id="razorpay-test-button">
-
                 Test Razorpay Payment
-
             </button>
 
             <button
                 class="secondary-button"
                 onclick="document.querySelector('.dataset-upload').scrollIntoView({behavior:'smooth'})">
-
                 Analyze Dataset
-
             </button>
 
         </div>
@@ -120,9 +101,7 @@
 </section>
 
 
-<!-- =========================
-     PAYMENT DATA
-========================== -->
+<!-- PAYMENT DATA -->
 
 <section class="dataset-upload">
 
@@ -134,9 +113,7 @@
                 📁 PAYMENT DATA
             </span>
 
-            <h2>
-                Payment Data
-            </h2>
+            <h2>Payment Data</h2>
 
             <p>
                 Analyze payment activity from Razorpay Test Mode,
@@ -168,17 +145,13 @@
             <button
                 id="upload-button"
                 onclick="uploadPaymentCSV()">
-
                 Upload Dataset
-
             </button>
 
             <button
                 id="reset-demo-button"
                 onclick="resetDemoDataset()">
-
                 Use Demo Dataset
-
             </button>
 
         </div>
@@ -187,28 +160,19 @@
         <div class="dataset-status">
 
             <div>
-
-                <span>
-                    CURRENT DATA SOURCE
-                </span>
+                <span>CURRENT DATA SOURCE</span>
 
                 <strong id="dataset-type">
                     Demo Dataset
                 </strong>
-
             </div>
 
-
             <div>
-
-                <span>
-                    PAYMENTS
-                </span>
+                <span>PAYMENTS</span>
 
                 <strong id="dataset-total">
                     500
                 </strong>
-
             </div>
 
         </div>
@@ -224,9 +188,7 @@
 </section>
 
 
-<!-- =========================
-     KEY METRICS
-========================== -->
+<!-- PAYMENT HEALTH -->
 
 <section class="metrics-section">
 
@@ -238,9 +200,7 @@
                 💰 REVENUE INTELLIGENCE
             </span>
 
-            <h2>
-                Payment Health
-            </h2>
+            <h2>Payment Health</h2>
 
         </div>
 
@@ -249,93 +209,65 @@
 
     <div class="dashboard">
 
-
         <div class="card">
-
             <span class="metric-label">
                 TOTAL PAYMENTS
             </span>
 
-            <p id="total-payments">
-                0
-            </p>
-
+            <p id="total-payments">0</p>
         </div>
 
 
         <div class="card">
-
             <span class="metric-label">
                 SUCCESSFUL
             </span>
 
-            <p id="successful-payments">
-                0
-            </p>
-
+            <p id="successful-payments">0</p>
         </div>
 
 
         <div class="card">
-
             <span class="metric-label">
                 FAILED
             </span>
 
-            <p id="failed-payments">
-                0
-            </p>
-
+            <p id="failed-payments">0</p>
         </div>
 
 
         <div class="card">
-
             <span class="metric-label">
                 FAILURE RATE
             </span>
 
-            <p id="failure-rate">
-                0%
-            </p>
-
+            <p id="failure-rate">0%</p>
         </div>
 
 
         <div class="card highlight-card">
-
             <span class="metric-label">
                 REVENUE AT RISK
             </span>
 
-            <p id="revenue-at-risk">
-                ₹0
-            </p>
-
+            <p id="revenue-at-risk">₹0</p>
         </div>
 
 
         <div class="card highlight-card">
-
             <span class="metric-label">
                 POTENTIAL RECOVERY
             </span>
 
-            <p id="potential-recovery">
-                ₹0
-            </p>
-
+            <p id="potential-recovery">₹0</p>
         </div>
-
 
     </div>
 
 </section>
 
 
-<!-- =========================
-     RECOVERY OVERVIEW
-========================== -->
+<!-- RECOVERY OVERVIEW -->
 
 <section class="recovery-overview">
 
@@ -347,9 +279,7 @@
                 🎯 RECOVERY INTELLIGENCE
             </span>
 
-            <h2>
-                Recovery Overview
-            </h2>
+            <h2>Recovery Overview</h2>
 
             <p>
                 Track simulated recovery performance across failed payments.
@@ -366,23 +296,13 @@
 
     <div class="overview-metrics">
 
-
         <div class="overview-card">
 
-            <span class="overview-icon">
-                ↻
-            </span>
+            <span class="overview-icon">↻</span>
 
             <div>
-
-                <span class="metric-label">
-                    ATTEMPTS
-                </span>
-
-                <p id="overview-attempts">
-                    0
-                </p>
-
+                <span class="metric-label">ATTEMPTS</span>
+                <p id="overview-attempts">0</p>
             </div>
 
         </div>
@@ -390,20 +310,11 @@
 
         <div class="overview-card">
 
-            <span class="overview-icon">
-                ✓
-            </span>
+            <span class="overview-icon">✓</span>
 
             <div>
-
-                <span class="metric-label">
-                    RECOVERED
-                </span>
-
-                <p id="overview-recovered-transactions">
-                    0
-                </p>
-
+                <span class="metric-label">RECOVERED</span>
+                <p id="overview-recovered-transactions">0</p>
             </div>
 
         </div>
@@ -411,12 +322,9 @@
 
         <div class="overview-card">
 
-            <span class="overview-icon">
-                ₹
-            </span>
+            <span class="overview-icon">₹</span>
 
             <div>
-
                 <span class="metric-label">
                     RECOVERED AMOUNT
                 </span>
@@ -424,7 +332,6 @@
                 <p id="overview-recovered-amount">
                     ₹0
                 </p>
-
             </div>
 
         </div>
@@ -432,12 +339,9 @@
 
         <div class="overview-card">
 
-            <span class="overview-icon">
-                %
-            </span>
+            <span class="overview-icon">%</span>
 
             <div>
-
                 <span class="metric-label">
                     RECOVERY RATE
                 </span>
@@ -445,20 +349,16 @@
                 <p id="overview-recovery-rate">
                     0%
                 </p>
-
             </div>
 
         </div>
-
 
     </div>
 
 </section>
 
 
-<!-- =========================
-     RECOVERY OPPORTUNITY
-========================== -->
+<!-- REVENUE RISK -->
 
 <section class="recovery-opportunity">
 
@@ -470,12 +370,11 @@
                 ⚠️ REVENUE RISK
             </span>
 
-            <h2>
-                Where Revenue Is At Risk
-            </h2>
+            <h2>Where Revenue Is At Risk</h2>
 
             <p>
-                Identify the failure types creating the largest recovery opportunities.
+                Identify the failure types creating the largest
+                recovery opportunities.
             </p>
 
         </div>
@@ -500,15 +399,11 @@
 
     <div class="opportunity-insight">
 
-        <span>
-            💡
-        </span>
+        <span>💡</span>
 
         <p>
 
-            <strong>
-                Key insight:
-            </strong>
+            <strong>Key insight:</strong>
 
             Bank timeouts represent the largest revenue risk,
             while technical timeout failures are the safest
@@ -521,9 +416,7 @@
 </section>
 
 
-<!-- =========================
-     RECOVERY RECOMMENDATIONS
-========================== -->
+<!-- RECOVERY PLAYBOOK -->
 
 <section class="recommendations">
 
@@ -535,9 +428,7 @@
                 🎯 RECOVERY PLAYBOOK
             </span>
 
-            <h2>
-                Recommended Actions
-            </h2>
+            <h2>Recommended Actions</h2>
 
             <p>
                 The safest recovery action for each failure pattern.
@@ -559,9 +450,7 @@
 </section>
 
 
-<!-- =========================
-     AI ANALYSIS
-========================== -->
+<!-- GEMINI AI -->
 
 <section class="ai-analysis">
 
@@ -573,9 +462,7 @@
                 🤖 GEMINI AI
             </span>
 
-            <h2>
-                AI Recovery Decision
-            </h2>
+            <h2>AI Recovery Decision</h2>
 
             <p>
                 Gemini analyzes payment failures and explains
@@ -595,9 +482,7 @@
 
         <div>
 
-            <strong>
-                Recovery Copilot
-            </strong>
+            <strong>Recovery Copilot</strong>
 
             <p>
                 Analyze the current payment dataset and generate
@@ -642,9 +527,7 @@
 </section>
 
 
-<!-- =========================
-     RECOVERY CONTROL
-========================== -->
+<!-- RECOVERY CONTROL -->
 
 <section class="batch-recovery">
 
@@ -656,9 +539,7 @@
                 ⚙️ RECOVERY CONTROL
             </span>
 
-            <h2>
-                Execute Recovery
-            </h2>
+            <h2>Execute Recovery</h2>
 
             <p>
                 Run bounded recovery actions using safety rules,
@@ -676,15 +557,11 @@
 
     <div class="recovery-control-warning">
 
-        <span>
-            🛡️
-        </span>
+        <span>🛡️</span>
 
         <div>
 
-            <strong>
-                Controlled Recovery
-            </strong>
+            <strong>Controlled Recovery</strong>
 
             <p>
                 Recovery actions are limited by safety rules.
@@ -717,9 +594,7 @@
 </section>
 
 
-<!-- =========================
-     RECOVERY PERFORMANCE
-========================== -->
+<!-- RECOVERY PERFORMANCE -->
 
 <section class="recovery-performance">
 
@@ -731,9 +606,7 @@
                 📈 PERFORMANCE
             </span>
 
-            <h2>
-                Recovery Performance
-            </h2>
+            <h2>Recovery Performance</h2>
 
             <p>
                 Measure how much failed revenue was recovered.
@@ -746,16 +619,13 @@
 
     <div class="recovery-metrics">
 
-
         <div class="metric-card">
 
             <span class="metric-label">
                 RECOVERY ATTEMPTS
             </span>
 
-            <p id="recovery-attempts">
-                0
-            </p>
+            <p id="recovery-attempts">0</p>
 
         </div>
 
@@ -766,9 +636,7 @@
                 RECOVERED TRANSACTIONS
             </span>
 
-            <p id="recovered-transactions">
-                0
-            </p>
+            <p id="recovered-transactions">0</p>
 
         </div>
 
@@ -779,9 +647,7 @@
                 RECOVERED AMOUNT
             </span>
 
-            <p id="recovered-amount">
-                ₹0
-            </p>
+            <p id="recovered-amount">₹0</p>
 
         </div>
 
@@ -792,21 +658,16 @@
                 RECOVERY RATE
             </span>
 
-            <p id="recovery-rate">
-                0%
-            </p>
+            <p id="recovery-rate">0%</p>
 
         </div>
-
 
     </div>
 
 </section>
 
 
-<!-- =========================
-     AUDIT TRAIL
-========================== -->
+<!-- AUDIT TRAIL -->
 
 <section class="audit">
 
@@ -818,9 +679,7 @@
                 🛡️ SAFETY & COMPLIANCE
             </span>
 
-            <h2>
-                Decision Audit Trail
-            </h2>
+            <h2>Decision Audit Trail</h2>
 
             <p>
                 Every recovery decision and action is recorded
@@ -838,12 +697,9 @@
 
     <div class="audit-summary">
 
-
         <div class="audit-card">
 
-            <span>
-                📋
-            </span>
+            <span>📋</span>
 
             <div>
 
@@ -851,9 +707,7 @@
                     TOTAL ACTIONS
                 </span>
 
-                <p id="audit-total">
-                    0
-                </p>
+                <p id="audit-total">0</p>
 
             </div>
 
@@ -862,9 +716,7 @@
 
         <div class="audit-card">
 
-            <span>
-                ✓
-            </span>
+            <span>✓</span>
 
             <div>
 
@@ -872,9 +724,7 @@
                     RECOVERED
                 </span>
 
-                <p id="audit-recovered">
-                    0
-                </p>
+                <p id="audit-recovered">0</p>
 
             </div>
 
@@ -883,9 +733,7 @@
 
         <div class="audit-card">
 
-            <span>
-                ×
-            </span>
+            <span>×</span>
 
             <div>
 
@@ -893,9 +741,7 @@
                     NOT RECOVERED
                 </span>
 
-                <p id="audit-not-recovered">
-                    0
-                </p>
+                <p id="audit-not-recovered">0</p>
 
             </div>
 
@@ -904,9 +750,7 @@
 
         <div class="audit-card">
 
-            <span>
-                !
-            </span>
+            <span>!</span>
 
             <div>
 
@@ -914,14 +758,11 @@
                     APPROVAL REQUIRED
                 </span>
 
-                <p id="audit-approval">
-                    0
-                </p>
+                <p id="audit-approval">0</p>
 
             </div>
 
         </div>
-
 
     </div>
 
@@ -951,7 +792,6 @@
 
 
 </main>
-
 
 <script src="script.js"></script>
 

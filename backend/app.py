@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 import csv
@@ -26,9 +26,7 @@ CORS(app)
 # BASE PATHS
 # ============================================================
 
-BASE_DIR = os.path.dirname(
-    os.path.abspath(__file__)
-)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 ENV_PATH = os.path.join(
     BASE_DIR,
@@ -43,9 +41,7 @@ load_dotenv(ENV_PATH)
 # GEMINI AI CONFIGURATION
 # ============================================================
 
-GEMINI_API_KEY = os.getenv(
-    "GEMINI_API_KEY"
-)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if GEMINI_API_KEY:
     client = genai.Client(
@@ -59,25 +55,17 @@ else:
 # RAZORPAY TEST MODE CONFIGURATION
 # ============================================================
 
-RAZORPAY_KEY_ID = os.getenv(
-    "RAZORPAY_KEY_ID"
-)
-
-RAZORPAY_KEY_SECRET = os.getenv(
-    "RAZORPAY_KEY_SECRET"
-)
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
 
 if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET:
-
     razorpay_client = razorpay.Client(
         auth=(
             RAZORPAY_KEY_ID,
             RAZORPAY_KEY_SECRET
         )
     )
-
 else:
-
     razorpay_client = None
 
 
@@ -103,7 +91,6 @@ UPLOADED_DATASET = os.path.join(
 
 ACTIVE_DATASET = DEFAULT_DATASET
 
-
 REQUIRED_COLUMNS = [
     "payment_id",
     "amount",
@@ -119,66 +106,48 @@ REQUIRED_COLUMNS = [
 
 MAX_RETRIES = 2
 
-
 recovery_probability = {
-
     "upi_timeout": 0.80,
-
     "bank_timeout": 0.70,
-
     "insufficient_funds": 0.40,
-
     "card_expired": 0.50
-
 }
 
 
 recovery_actions = {
-
     "upi_timeout": {
-
         "action": "retry_payment",
-
         "risk": "low",
-
-        "reason":
+        "reason": (
             "Temporary UPI timeout may succeed on retry."
-
+        )
     },
 
     "bank_timeout": {
-
         "action": "retry_after_delay",
-
         "risk": "low",
-
-        "reason":
-            "Temporary bank timeout may recover after a short delay."
-
+        "reason": (
+            "Temporary bank timeout may recover "
+            "after a short delay."
+        )
     },
 
     "insufficient_funds": {
-
         "action": "send_payment_reminder",
-
         "risk": "medium",
-
-        "reason":
-            "Retrying immediately is unlikely to succeed without sufficient funds."
-
+        "reason": (
+            "Retrying immediately is unlikely to succeed "
+            "without sufficient funds."
+        )
     },
 
     "card_expired": {
-
         "action": "request_card_update",
-
         "risk": "medium",
-
-        "reason":
+        "reason": (
             "The customer needs to update the expired card."
-
+        )
     }
-
 }
 
 
@@ -187,22 +156,19 @@ recovery_actions = {
 # ============================================================
 
 audit_log = []
-
 retry_counts = {}
-
 recovery_results = {}
-
 razorpay_transactions = []
 
 
 def reset_recovery_state():
+    """
+    Clear all recovery and audit information.
+    """
 
     audit_log.clear()
-
     retry_counts.clear()
-
     recovery_results.clear()
-
     razorpay_transactions.clear()
 
 
@@ -216,24 +182,16 @@ def add_audit_log(
     status,
     message
 ):
+    """
+    Add an action to the audit trail.
+    """
 
     audit_log.append({
-
-        "timestamp":
-            datetime.now().isoformat(),
-
-        "payment_id":
-            payment_id,
-
-        "action":
-            action,
-
-        "status":
-            status,
-
-        "message":
-            message
-
+        "timestamp": datetime.now().isoformat(),
+        "payment_id": payment_id,
+        "action": action,
+        "status": status,
+        "message": message
     })
 
 
@@ -245,16 +203,19 @@ def simulate_recovery(
     payment_id,
     probability
 ):
+    """
+    Generate a deterministic recovery result.
+
+    The same payment ID always produces
+    the same result for the same probability.
+    """
 
     hash_value = hashlib.md5(
         payment_id.encode()
     ).hexdigest()
 
     number = (
-        int(
-            hash_value[:8],
-            16
-        )
+        int(hash_value[:8], 16)
         /
         0xFFFFFFFF
     )
@@ -267,13 +228,13 @@ def simulate_recovery(
 # ============================================================
 
 def get_payments():
+    """
+    Read the currently active payment dataset.
+    """
 
     payments = []
 
-    if not os.path.exists(
-        ACTIVE_DATASET
-    ):
-
+    if not os.path.exists(ACTIVE_DATASET):
         return payments
 
     with open(
@@ -283,12 +244,9 @@ def get_payments():
         encoding="utf-8-sig"
     ) as file:
 
-        reader = csv.DictReader(
-            file
-        )
+        reader = csv.DictReader(file)
 
         for row in reader:
-
             payments.append(row)
 
     return payments
@@ -300,53 +258,40 @@ def get_payments():
 
 @app.route("/")
 def home():
+    return send_from_directory(
+        os.path.join(BASE_DIR, "..", "frontend"),
+        "index.html"
+    )
 
-    return jsonify({
 
-        "success": True,
-
-        "message":
-            "Recovery Copilot is running!",
-
-        "mode":
-            "Razorpay Test Mode",
-
-        "simulation_mode":
-            True
-
-    })
+@app.route("/<path:filename>")
+def frontend_files(filename):
+    return send_from_directory(
+        os.path.join(BASE_DIR, "..", "frontend"),
+        filename
+    )
 
 
 # ============================================================
 # RAZORPAY CONFIG
 # ============================================================
 
-@app.route(
-    "/api/razorpay/config"
-)
+@app.route("/api/razorpay/config")
 def razorpay_config():
 
     if not RAZORPAY_KEY_ID:
 
         return jsonify({
-
             "success": False,
-
-            "message":
+            "message": (
                 "Razorpay Test Key ID is not configured."
-
+            )
         }), 500
 
     return jsonify({
-
         "success": True,
-
-        "key_id":
-            RAZORPAY_KEY_ID,
-
-        "test_mode":
-            True
-
+        "key_id": RAZORPAY_KEY_ID,
+        "test_mode": True
     })
 
 
@@ -363,150 +308,85 @@ def create_razorpay_order():
     if razorpay_client is None:
 
         return jsonify({
-
             "success": False,
-
-            "message":
+            "message": (
                 "Razorpay Test API keys are not configured."
-
+            )
         }), 500
 
-
-    data = request.get_json(
-        silent=True
-    )
-
+    data = request.get_json(silent=True)
 
     if not data:
 
         return jsonify({
-
             "success": False,
-
-            "message":
-                "No payment data received."
-
+            "message": "No payment data received."
         }), 400
-
 
     try:
 
         amount = float(
-            data.get(
-                "amount",
-                0
-            )
+            data.get("amount", 0)
         )
 
-    except (
-        TypeError,
-        ValueError
-    ):
+    except (TypeError, ValueError):
 
         return jsonify({
-
             "success": False,
-
-            "message":
-                "Amount must be a valid number."
-
+            "message": "Amount must be a valid number."
         }), 400
-
 
     if amount < 1:
 
         return jsonify({
-
             "success": False,
-
-            "message":
+            "message": (
                 "Test payment amount must be at least ₹1."
-
+            )
         }), 400
 
-
     amount_in_paise = int(
-        round(
-            amount * 100
-        )
+        round(amount * 100)
     )
-
 
     receipt = (
         "rcpt_"
         + uuid.uuid4().hex[:20]
     )
 
-
     try:
 
         order = razorpay_client.order.create(
-
             data={
-
-                "amount":
-                    amount_in_paise,
-
-                "currency":
-                    "INR",
-
-                "receipt":
-                    receipt,
-
+                "amount": amount_in_paise,
+                "currency": "INR",
+                "receipt": receipt,
                 "notes": {
-
-                    "application":
-                        "Recovery Copilot",
-
-                    "mode":
-                        "TEST"
-
+                    "application": "Recovery Copilot",
+                    "mode": "TEST"
                 }
-
             }
-
         )
-
 
         add_audit_log(
-
             "SYSTEM",
-
             "razorpay_test_order",
-
             "created",
-
             (
-                "Created Razorpay Test Mode order "
+                f"Created Razorpay Test Mode order "
                 f"{order['id']} for ₹{amount:.2f}."
             )
-
         )
 
-
         return jsonify({
-
             "success": True,
-
             "test_mode": True,
-
-            "order_id":
-                order["id"],
-
-            "amount":
-                amount_in_paise,
-
-            "currency":
-                "INR",
-
-            "key_id":
-                RAZORPAY_KEY_ID,
-
-            "receipt":
-                receipt
-
+            "order_id": order["id"],
+            "amount": amount_in_paise,
+            "currency": "INR",
+            "key_id": RAZORPAY_KEY_ID,
+            "receipt": receipt
         })
-
 
     except Exception as error:
 
@@ -515,27 +395,18 @@ def create_razorpay_order():
             error
         )
 
-
         add_audit_log(
-
             "SYSTEM",
-
             "razorpay_test_order",
-
             "failed",
-
             "Unable to create Razorpay Test Mode order."
-
         )
 
-
         return jsonify({
-
             "success": False,
-
-            "message":
+            "message": (
                 "Unable to create Razorpay Test Mode order."
-
+            )
         }), 500
 
 
@@ -552,31 +423,22 @@ def verify_razorpay_payment():
     if razorpay_client is None:
 
         return jsonify({
-
             "success": False,
-
-            "message":
+            "message": (
                 "Razorpay Test API keys are not configured."
-
+            )
         }), 500
 
-
-    data = request.get_json(
-        silent=True
-    )
-
+    data = request.get_json(silent=True)
 
     if not data:
 
         return jsonify({
-
             "success": False,
-
-            "message":
+            "message": (
                 "No payment verification data received."
-
+            )
         }), 400
-
 
     razorpay_order_id = data.get(
         "razorpay_order_id"
@@ -590,112 +452,63 @@ def verify_razorpay_payment():
         "razorpay_signature"
     )
 
-
     if not all([
-
         razorpay_order_id,
         razorpay_payment_id,
         razorpay_signature
-
     ]):
 
         return jsonify({
-
             "success": False,
-
-            "message":
+            "message": (
                 "Incomplete Razorpay payment information."
-
+            )
         }), 400
-
 
     try:
 
         razorpay_client.utility.verify_payment_signature({
-
-            "razorpay_order_id":
-                razorpay_order_id,
-
-            "razorpay_payment_id":
-                razorpay_payment_id,
-
-            "razorpay_signature":
-                razorpay_signature
-
+            "razorpay_order_id": razorpay_order_id,
+            "razorpay_payment_id": razorpay_payment_id,
+            "razorpay_signature": razorpay_signature
         })
 
-
-        amount = data.get(
-            "amount",
-            0
-        )
-
+        amount = data.get("amount", 0)
 
         transaction = {
-
-            "payment_id":
-                razorpay_payment_id,
-
-            "order_id":
-                razorpay_order_id,
-
-            "status":
-                "success",
-
-            "amount":
-                amount,
-
-            "source":
-                "Razorpay Test Mode",
-
-            "timestamp":
-                datetime.now().isoformat()
-
+            "payment_id": razorpay_payment_id,
+            "order_id": razorpay_order_id,
+            "status": "success",
+            "amount": amount,
+            "source": "Razorpay Test Mode",
+            "timestamp": datetime.now().isoformat()
         }
-
 
         razorpay_transactions.append(
             transaction
         )
 
-
         add_audit_log(
-
             razorpay_payment_id,
-
             "razorpay_test_payment",
-
             "success",
-
-            "Razorpay Test Mode payment signature verified successfully."
-
+            (
+                "Razorpay Test Mode payment signature "
+                "verified successfully."
+            )
         )
 
-
         return jsonify({
-
             "success": True,
-
-            "status":
-                "success",
-
-            "payment_id":
-                razorpay_payment_id,
-
-            "order_id":
-                razorpay_order_id,
-
-            "amount":
-                amount,
-
-            "message":
-                "Test payment verified successfully.",
-
-            "simulation_mode":
-                True
-
+            "status": "success",
+            "payment_id": razorpay_payment_id,
+            "order_id": razorpay_order_id,
+            "amount": amount,
+            "message": (
+                "Test payment verified successfully."
+            ),
+            "simulation_mode": True
         })
-
 
     except Exception as error:
 
@@ -704,30 +517,20 @@ def verify_razorpay_payment():
             error
         )
 
-
         add_audit_log(
-
             razorpay_payment_id or "UNKNOWN",
-
             "razorpay_test_payment",
-
             "verification_failed",
-
-            "Razorpay payment signature verification failed."
-
+            (
+                "Razorpay payment signature "
+                "verification failed."
+            )
         )
 
-
         return jsonify({
-
             "success": False,
-
-            "status":
-                "verification_failed",
-
-            "message":
-                "Payment verification failed."
-
+            "status": "verification_failed",
+            "message": "Payment verification failed."
         }), 400
 
 
@@ -741,22 +544,16 @@ def verify_razorpay_payment():
 )
 def razorpay_payment_failed():
 
-    data = request.get_json(
-        silent=True
-    )
-
+    data = request.get_json(silent=True)
 
     if not data:
 
         return jsonify({
-
             "success": False,
-
-            "message":
+            "message": (
                 "No failed payment data received."
-
+            )
         }), 400
-
 
     payment_id = data.get(
         "razorpay_payment_id"
@@ -772,23 +569,16 @@ def razorpay_payment_failed():
         0
     )
 
-
     try:
 
-        amount = float(
-            amount
-        )
+        amount = float(amount)
 
-    except (
-        TypeError,
-        ValueError
-    ):
+    except (TypeError, ValueError):
 
         amount = 0
 
-
     # --------------------------------------------------------
-    # GENERATE PAYMENT ID IF CHECKOUT DOES NOT PROVIDE ONE
+    # GENERATE PAYMENT ID IF NEEDED
     # --------------------------------------------------------
 
     if not payment_id:
@@ -798,80 +588,49 @@ def razorpay_payment_failed():
             + uuid.uuid4().hex[:10].upper()
         )
 
-
     # --------------------------------------------------------
     # FAILURE REASON
     # --------------------------------------------------------
 
-    failure_reason = data.get(
-        "reason"
-    )
-
+    failure_reason = data.get("reason")
 
     if not failure_reason:
-
         failure_reason = "bank_timeout"
-
 
     if failure_reason not in recovery_actions:
-
         failure_reason = "bank_timeout"
-
 
     # --------------------------------------------------------
     # STORE FAILED TRANSACTION
     # --------------------------------------------------------
 
     transaction = {
-
-        "payment_id":
-            payment_id,
-
-        "order_id":
-            order_id,
-
-        "status":
-            "failed",
-
-        "amount":
-            amount,
-
-        "failure_reason":
-            failure_reason,
-
-        "source":
-            "Razorpay Test Mode",
-
-        "timestamp":
-            datetime.now().isoformat()
-
+        "payment_id": payment_id,
+        "order_id": order_id,
+        "status": "failed",
+        "amount": amount,
+        "failure_reason": failure_reason,
+        "source": "Razorpay Test Mode",
+        "timestamp": datetime.now().isoformat()
     }
-
 
     razorpay_transactions.append(
         transaction
     )
-
 
     # --------------------------------------------------------
     # STEP 1 — DETECT FAILURE
     # --------------------------------------------------------
 
     add_audit_log(
-
         payment_id,
-
         "razorpay_payment_failed",
-
         "detected",
-
         (
             "Razorpay Test Mode payment failed. "
             "Recovery Copilot detected the failed payment."
         )
-
     )
-
 
     # --------------------------------------------------------
     # STEP 2 — RECOMMEND ACTION
@@ -881,36 +640,22 @@ def razorpay_payment_failed():
         failure_reason
     ]
 
-
-    action = recommendation[
-        "action"
-    ]
-
-    risk = recommendation[
-        "risk"
-    ]
-
+    action = recommendation["action"]
+    risk = recommendation["risk"]
     probability = recovery_probability[
         failure_reason
     ]
 
-
     add_audit_log(
-
         payment_id,
-
         action,
-
         "recommended",
-
         (
             f"Recovery Copilot recommends {action} "
             f"for {failure_reason}. "
             f"Risk level: {risk}."
         )
-
     )
-
 
     # --------------------------------------------------------
     # STEP 3 — SAFETY CHECK
@@ -919,61 +664,32 @@ def razorpay_payment_failed():
     if risk == "medium":
 
         add_audit_log(
-
             payment_id,
-
             action,
-
             "approval_required",
-
             (
                 "Recovery action requires merchant "
                 "approval because it is medium risk."
             )
-
         )
 
-
         return jsonify({
-
             "success": True,
-
-            "status":
-                "approval_required",
-
-            "payment_id":
-                payment_id,
-
-            "order_id":
-                order_id,
-
-            "amount":
-                amount,
-
-            "failure_reason":
-                failure_reason,
-
-            "action":
-                action,
-
-            "risk":
-                risk,
-
-            "recovered":
-                False,
-
-            "message":
-                (
-                    "Failed Razorpay payment detected. "
-                    "Merchant approval is required before "
-                    "the recovery action can execute."
-                ),
-
-            "simulation_mode":
-                True
-
+            "status": "approval_required",
+            "payment_id": payment_id,
+            "order_id": order_id,
+            "amount": amount,
+            "failure_reason": failure_reason,
+            "action": action,
+            "risk": risk,
+            "recovered": False,
+            "message": (
+                "Failed Razorpay payment detected. "
+                "Merchant approval is required before "
+                "the recovery action can execute."
+            ),
+            "simulation_mode": True
         })
-
 
     # --------------------------------------------------------
     # STEP 4 — BOUNDED RETRY CHECK
@@ -984,7 +700,6 @@ def razorpay_payment_failed():
         0
     )
 
-
     if action in [
         "retry_payment",
         "retry_after_delay"
@@ -993,77 +708,43 @@ def razorpay_payment_failed():
         if current_retry_count >= MAX_RETRIES:
 
             add_audit_log(
-
                 payment_id,
-
                 action,
-
                 "blocked",
-
                 "Maximum retry limit reached."
-
             )
 
-
             return jsonify({
-
                 "success": False,
-
-                "status":
-                    "blocked",
-
-                "payment_id":
-                    payment_id,
-
-                "action":
-                    action,
-
-                "retry_count":
-                    current_retry_count,
-
-                "message":
-                    (
-                        "Recovery blocked because "
-                        "the maximum retry limit was reached."
-                    )
-
+                "status": "blocked",
+                "payment_id": payment_id,
+                "action": action,
+                "retry_count": current_retry_count,
+                "message": (
+                    "Recovery blocked because "
+                    "the maximum retry limit was reached."
+                )
             }), 403
-
 
         retry_counts[payment_id] = (
             current_retry_count + 1
         )
-
 
     # --------------------------------------------------------
     # STEP 5 — SIMULATE RECOVERY
     # --------------------------------------------------------
 
     recovered = simulate_recovery(
-
         payment_id,
-
         probability
-
     )
 
-
     recovery_results[payment_id] = {
-
-        "amount":
-            amount,
-
-        "recovered":
-            recovered,
-
-        "failure_reason":
-            failure_reason,
-
-        "action":
-            action
-
+        "amount": amount,
+        "recovered": recovered,
+        "failure_reason": failure_reason,
+        "action": action
     }
-
 
     # --------------------------------------------------------
     # STEP 6 — AUDIT RESULT
@@ -1072,20 +753,14 @@ def razorpay_payment_failed():
     if recovered:
 
         add_audit_log(
-
             payment_id,
-
             action,
-
             "recovered",
-
             (
                 "Razorpay Test Mode payment "
                 "recovered successfully in simulation mode."
             )
-
         )
-
 
         status = "recovered"
 
@@ -1094,24 +769,17 @@ def razorpay_payment_failed():
             "payment successfully in simulation mode."
         )
 
-
     else:
 
         add_audit_log(
-
             payment_id,
-
             action,
-
             "not_recovered",
-
             (
                 "Recovery action executed, but the "
                 "payment was not recovered in simulation mode."
             )
-
         )
-
 
         status = "not_recovered"
 
@@ -1120,47 +788,22 @@ def razorpay_payment_failed():
             "payment was not recovered in simulation mode."
         )
 
-
     return jsonify({
-
         "success": True,
-
-        "status":
-            status,
-
-        "payment_id":
+        "status": status,
+        "payment_id": payment_id,
+        "order_id": order_id,
+        "amount": amount,
+        "failure_reason": failure_reason,
+        "action": action,
+        "risk": risk,
+        "recovered": recovered,
+        "retry_count": retry_counts.get(
             payment_id,
-
-        "order_id":
-            order_id,
-
-        "amount":
-            amount,
-
-        "failure_reason":
-            failure_reason,
-
-        "action":
-            action,
-
-        "risk":
-            risk,
-
-        "recovered":
-            recovered,
-
-        "retry_count":
-            retry_counts.get(
-                payment_id,
-                0
-            ),
-
-        "message":
-            message,
-
-        "simulation_mode":
-            True
-
+            0
+        ),
+        "message": message,
+        "simulation_mode": True
     })
 
 
@@ -1168,21 +811,13 @@ def razorpay_payment_failed():
 # RAZORPAY TRANSACTIONS
 # ============================================================
 
-@app.route(
-    "/api/razorpay/transactions"
-)
+@app.route("/api/razorpay/transactions")
 def get_razorpay_transactions():
 
     return jsonify({
-
         "success": True,
-
-        "test_mode":
-            True,
-
-        "transactions":
-            razorpay_transactions
-
+        "test_mode": True,
+        "transactions": razorpay_transactions
     })
 
 
@@ -1198,47 +833,28 @@ def upload_dataset():
 
     global ACTIVE_DATASET
 
-
     if "file" not in request.files:
 
         return jsonify({
-
             "success": False,
-
-            "message":
-                "Please upload a CSV file."
-
+            "message": "Please upload a CSV file."
         }), 400
 
-
     file = request.files["file"]
-
 
     if file.filename == "":
 
         return jsonify({
-
             "success": False,
-
-            "message":
-                "No file selected."
-
+            "message": "No file selected."
         }), 400
 
-
-    if not file.filename.lower().endswith(
-        ".csv"
-    ):
+    if not file.filename.lower().endswith(".csv"):
 
         return jsonify({
-
             "success": False,
-
-            "message":
-                "Only CSV files are supported."
-
+            "message": "Only CSV files are supported."
         }), 400
-
 
     try:
 
@@ -1248,97 +864,64 @@ def upload_dataset():
 
         lines = content.splitlines()
 
-
         if not lines:
 
             return jsonify({
-
                 "success": False,
-
-                "message":
-                    "The uploaded CSV is empty."
-
+                "message": "The uploaded CSV is empty."
             }), 400
 
-
-        reader = csv.DictReader(
-            lines
-        )
-
+        reader = csv.DictReader(lines)
 
         if not reader.fieldnames:
 
             return jsonify({
-
                 "success": False,
-
-                "message":
-                    "CSV header row is missing."
-
+                "message": "CSV header row is missing."
             }), 400
 
-
         uploaded_columns = [
-
             column.strip()
-
             for column in reader.fieldnames
-
             if column
-
         ]
-
 
         missing_columns = [
-
             column
-
             for column in REQUIRED_COLUMNS
-
             if column not in uploaded_columns
-
         ]
-
 
         if missing_columns:
 
             return jsonify({
-
                 "success": False,
-
-                "message":
-                    (
-                        "Missing required columns: "
-                        + ", ".join(
-                            missing_columns
-                        )
-                    )
-
+                "message": (
+                    "Missing required columns: "
+                    + ", ".join(missing_columns)
+                )
             }), 400
 
-
-        rows = list(
-            reader
-        )
-
+        rows = list(reader)
 
         if len(rows) == 0:
 
             return jsonify({
-
                 "success": False,
-
-                "message":
-                    "The uploaded CSV contains no payment records."
-
+                "message": (
+                    "The uploaded CSV contains "
+                    "no payment records."
+                )
             }), 400
-
 
         valid_statuses = {
             "success",
             "failed"
         }
 
+        # ----------------------------------------------------
+        # VALIDATE EACH ROW
+        # ----------------------------------------------------
 
         for index, row in enumerate(
             rows,
@@ -1352,14 +935,12 @@ def upload_dataset():
                 ).strip()
             )
 
-
             amount = (
                 row.get(
                     "amount",
                     ""
                 ).strip()
             )
-
 
             status = (
                 row.get(
@@ -1370,7 +951,6 @@ def upload_dataset():
                 .lower()
             )
 
-
             failure_reason = (
                 row.get(
                     "failure_reason",
@@ -1378,65 +958,43 @@ def upload_dataset():
                 ).strip()
             )
 
-
             if not payment_id:
 
                 return jsonify({
-
                     "success": False,
-
-                    "message":
-                        (
-                            f"Row {index}: "
-                            "payment_id is required."
-                        )
-
+                    "message": (
+                        f"Row {index}: "
+                        "payment_id is required."
+                    )
                 }), 400
-
 
             try:
 
-                amount_value = float(
-                    amount
-                )
+                amount_value = float(amount)
 
                 if amount_value < 0:
-
                     raise ValueError
 
-            except (
-                TypeError,
-                ValueError
-            ):
+            except (TypeError, ValueError):
 
                 return jsonify({
-
                     "success": False,
-
-                    "message":
-                        (
-                            f"Row {index}: "
-                            "amount must be a valid "
-                            "positive number."
-                        )
-
+                    "message": (
+                        f"Row {index}: "
+                        "amount must be a valid "
+                        "positive number."
+                    )
                 }), 400
-
 
             if status not in valid_statuses:
 
                 return jsonify({
-
                     "success": False,
-
-                    "message":
-                        (
-                            f"Row {index}: "
-                            "status must be success or failed."
-                        )
-
+                    "message": (
+                        f"Row {index}: "
+                        "status must be success or failed."
+                    )
                 }), 400
-
 
             if (
                 status == "failed"
@@ -1444,113 +1002,79 @@ def upload_dataset():
             ):
 
                 return jsonify({
-
                     "success": False,
-
-                    "message":
-                        (
-                            f"Row {index}: failed payments "
-                            "require a failure_reason."
-                        )
-
+                    "message": (
+                        f"Row {index}: failed payments "
+                        "require a failure_reason."
+                    )
                 }), 400
 
+        # ----------------------------------------------------
+        # SAVE UPLOADED DATASET
+        # ----------------------------------------------------
 
         with open(
-
             UPLOADED_DATASET,
-
             "w",
-
             newline="",
-
             encoding="utf-8"
-
         ) as output_file:
 
             writer = csv.DictWriter(
-
                 output_file,
-
                 fieldnames=REQUIRED_COLUMNS
-
             )
 
-
             writer.writeheader()
-
 
             for row in rows:
 
                 writer.writerow({
+                    "payment_id": row.get(
+                        "payment_id",
+                        ""
+                    ).strip(),
 
-                    "payment_id":
-                        row.get(
-                            "payment_id",
-                            ""
-                        ).strip(),
+                    "amount": row.get(
+                        "amount",
+                        ""
+                    ).strip(),
 
-                    "amount":
-                        row.get(
-                            "amount",
-                            ""
-                        ).strip(),
+                    "status": row.get(
+                        "status",
+                        ""
+                    ).strip().lower(),
 
-                    "status":
-                        row.get(
-                            "status",
-                            ""
-                        ).strip().lower(),
+                    "failure_reason": row.get(
+                        "failure_reason",
+                        ""
+                    ).strip(),
 
-                    "failure_reason":
-                        row.get(
-                            "failure_reason",
-                            ""
-                        ).strip(),
-
-                    "customer_type":
-                        row.get(
-                            "customer_type",
-                            ""
-                        ).strip()
-
+                    "customer_type": row.get(
+                        "customer_type",
+                        ""
+                    ).strip()
                 })
-
 
         ACTIVE_DATASET = UPLOADED_DATASET
 
-
         reset_recovery_state()
 
-
         add_audit_log(
-
             "SYSTEM",
-
             "dataset_upload",
-
             "completed",
-
             "New payment dataset uploaded successfully."
-
         )
 
-
         return jsonify({
-
             "success": True,
-
-            "message":
-                "Payment dataset uploaded successfully.",
-
-            "filename":
-                file.filename,
-
-            "total_payments":
-                len(rows)
-
+            "message": (
+                "Payment dataset uploaded successfully."
+            ),
+            "filename": file.filename,
+            "total_payments": len(rows)
         })
-
 
     except Exception as error:
 
@@ -1559,14 +1083,11 @@ def upload_dataset():
             error
         )
 
-
         return jsonify({
-
             "success": False,
-
-            "message":
+            "message": (
                 "Unable to process the uploaded CSV."
-
+            )
         }), 500
 
 
@@ -1582,52 +1103,37 @@ def reset_demo_dataset():
 
     global ACTIVE_DATASET
 
-
-    if not os.path.exists(
-        DEFAULT_DATASET
-    ):
+    if not os.path.exists(DEFAULT_DATASET):
 
         return jsonify({
-
             "success": False,
-
-            "message":
+            "message": (
                 "Demo dataset is not available."
-
+            )
         }), 404
-
 
     ACTIVE_DATASET = DEFAULT_DATASET
 
-
     reset_recovery_state()
 
-
     add_audit_log(
-
         "SYSTEM",
-
         "reset_demo_dataset",
-
         "completed",
-
-        "Dashboard reset to the default demo dataset."
-
+        (
+            "Dashboard reset to the default "
+            "demo dataset."
+        )
     )
 
-
     return jsonify({
-
         "success": True,
-
-        "message":
-            "Dashboard reset to the demo dataset.",
-
-        "total_payments":
-            len(
-                get_payments()
-            )
-
+        "message": (
+            "Dashboard reset to the demo dataset."
+        ),
+        "total_payments": len(
+            get_payments()
+        )
     })
 
 
@@ -1635,33 +1141,20 @@ def reset_demo_dataset():
 # DATASET INFORMATION
 # ============================================================
 
-@app.route(
-    "/api/dataset"
-)
+@app.route("/api/dataset")
 def dataset_info():
 
     payments = get_payments()
 
-
     if ACTIVE_DATASET == DEFAULT_DATASET:
-
         dataset_type = "Demo Dataset"
-
     else:
-
         dataset_type = "Uploaded Dataset"
 
-
     return jsonify({
-
         "success": True,
-
-        "dataset_type":
-            dataset_type,
-
-        "total_payments":
-            len(payments)
-
+        "dataset_type": dataset_type,
+        "total_payments": len(payments)
     })
 
 
@@ -1669,26 +1162,18 @@ def dataset_info():
 # PAYMENT SUMMARY
 # ============================================================
 
-@app.route(
-    "/api/summary"
-)
+@app.route("/api/summary")
 def summary():
 
     payments = get_payments()
 
-
-    total = len(
-        payments
-    )
+    total = len(payments)
 
     successful = 0
-
     failed = 0
 
     revenue_at_risk = 0
-
     potential_recovery = 0
-
 
     for payment in payments:
 
@@ -1696,78 +1181,57 @@ def summary():
 
             successful += 1
 
-
         elif payment["status"] == "failed":
 
             failed += 1
-
 
             amount = float(
                 payment["amount"]
             )
 
-
             revenue_at_risk += amount
 
-
-            reason = payment[
-                "failure_reason"
-            ]
-
+            reason = payment["failure_reason"]
 
             if reason in recovery_probability:
 
                 potential_recovery += (
                     amount
                     *
-                    recovery_probability[
-                        reason
-                    ]
+                    recovery_probability[reason]
                 )
-
 
     if total > 0:
 
         failure_rate = (
-            failed
-            /
-            total
+            failed / total
         ) * 100
 
     else:
 
         failure_rate = 0
 
-
     return jsonify({
+        "total_payments": total,
 
-        "total_payments":
-            total,
+        "successful_payments": successful,
 
-        "successful_payments":
-            successful,
+        "failed_payments": failed,
 
-        "failed_payments":
-            failed,
+        "failure_rate": round(
+            failure_rate,
+            2
+        ),
 
-        "failure_rate":
-            round(
-                failure_rate,
-                2
-            ),
+        "revenue_at_risk": round(
+            revenue_at_risk,
+            2
+        ),
 
-        "revenue_at_risk":
-            round(
-                revenue_at_risk,
-                2
-            ),
-
-        "potential_recovery":
-            round(
-                potential_recovery,
-                2
-            )
-
+        "potential_recovery": round(
+            potential_recovery,
+            2
+        )
     })
 
 
@@ -1775,39 +1239,32 @@ def summary():
 # FAILURE ANALYSIS
 # ============================================================
 
-@app.route(
-    "/api/failures"
-)
+@app.route("/api/failures")
 def failures():
 
     payments = get_payments()
 
-
     failed_payments = []
-
 
     for row in payments:
 
         if row["status"] == "failed":
 
             failed_payments.append({
+                "payment_id": row["payment_id"],
 
-                "payment_id":
-                    row["payment_id"],
+                "amount": float(
+                    row["amount"]
+                ),
 
-                "amount":
-                    float(
-                        row["amount"]
-                    ),
+                "failure_reason": (
+                    row["failure_reason"]
+                ),
 
-                "failure_reason":
-                    row["failure_reason"],
-
-                "customer_type":
+                "customer_type": (
                     row["customer_type"]
-
+                )
             })
-
 
     return jsonify(
         failed_payments
@@ -1818,39 +1275,32 @@ def failures():
 # FAILED PAYMENTS
 # ============================================================
 
-@app.route(
-    "/api/payments"
-)
+@app.route("/api/payments")
 def payments():
 
     all_payments = get_payments()
 
-
     failed_payments = []
-
 
     for row in all_payments:
 
         if row["status"] == "failed":
 
             failed_payments.append({
+                "payment_id": row["payment_id"],
 
-                "payment_id":
-                    row["payment_id"],
+                "amount": float(
+                    row["amount"]
+                ),
 
-                "amount":
-                    float(
-                        row["amount"]
-                    ),
+                "failure_reason": (
+                    row["failure_reason"]
+                ),
 
-                "failure_reason":
-                    row["failure_reason"],
-
-                "customer_type":
+                "customer_type": (
                     row["customer_type"]
-
+                )
             })
-
 
     return jsonify(
         failed_payments
@@ -1861,9 +1311,7 @@ def payments():
 # RECOVERY RECOMMENDATIONS
 # ============================================================
 
-@app.route(
-    "/api/recommendations"
-)
+@app.route("/api/recommendations")
 def recommendations():
 
     return jsonify(
@@ -1883,54 +1331,41 @@ def ai_analysis():
 
     payments = get_payments()
 
-
     failure_summary = {}
 
+    # --------------------------------------------------------
+    # BUILD FAILURE SUMMARY
+    # --------------------------------------------------------
 
     for payment in payments:
 
         if payment["status"] != "failed":
-
             continue
 
-
-        reason = payment[
-            "failure_reason"
-        ]
-
+        reason = payment["failure_reason"]
 
         amount = float(
             payment["amount"]
         )
 
-
         if reason not in failure_summary:
 
             failure_summary[reason] = {
-
                 "count": 0,
-
                 "amount": 0
-
             }
 
+        failure_summary[reason]["count"] += 1
 
-        failure_summary[
-            reason
-        ]["count"] += 1
+        failure_summary[reason]["amount"] += amount
 
-
-        failure_summary[
-            reason
-        ]["amount"] += amount
-
+    # --------------------------------------------------------
+    # CALCULATE TOTALS
+    # --------------------------------------------------------
 
     total_failed = 0
-
     total_failed_amount = 0
-
     potential_recovery = 0
-
 
     for reason, data in failure_summary.items():
 
@@ -1938,17 +1373,17 @@ def ai_analysis():
 
         total_failed_amount += data["amount"]
 
-
         if reason in recovery_probability:
 
             potential_recovery += (
                 data["amount"]
                 *
-                recovery_probability[
-                    reason
-                ]
+                recovery_probability[reason]
             )
 
+    # --------------------------------------------------------
+    # GEMINI PROMPT
+    # --------------------------------------------------------
 
     prompt = f"""
 You are an AI revenue recovery analyst for a payment platform.
@@ -2009,7 +1444,6 @@ EXPLANATION
 Keep the analysis concise and business-focused.
 """
 
-
     # ========================================================
     # GEMINI AI
     # ========================================================
@@ -2020,10 +1454,7 @@ Keep the analysis concise and business-focused.
 
         max_attempts = 3
 
-
-        for attempt in range(
-            max_attempts
-        ):
+        for attempt in range(max_attempts):
 
             try:
 
@@ -2032,112 +1463,79 @@ Keep the analysis concise and business-focused.
                     f"{attempt + 1}/{max_attempts}"
                 )
 
-
                 response = client.models.generate_content(
-
                     model="gemini-3.8-flash",
-
                     contents=prompt
-
                 )
 
-
                 break
-
 
             except Exception as gemini_error:
 
                 print(
-
                     f"Gemini attempt "
                     f"{attempt + 1} failed:",
-
                     gemini_error
-
                 )
 
-
-                if attempt < (
-                    max_attempts - 1
-                ):
+                if attempt < max_attempts - 1:
 
                     delay = 3 * (
                         2 ** attempt
                     )
 
+                    time.sleep(delay)
 
-                    time.sleep(
-                        delay
-                    )
-
+        # ----------------------------------------------------
+        # GEMINI SUCCESS
+        # ----------------------------------------------------
 
         if response is not None:
 
             ai_text = response.text
 
-
             add_audit_log(
-
                 "SYSTEM",
-
                 "ai_revenue_analysis",
-
                 "completed",
-
                 (
                     "Gemini AI analyzed failed payment "
-                    "patterns and generated a recovery strategy."
+                    "patterns and generated a "
+                    "recovery strategy."
                 )
-
             )
 
-
             return jsonify({
-
                 "success": True,
 
-                "analysis":
-                    ai_text,
+                "analysis": ai_text,
 
-                "analysis_source":
-                    "Gemini AI",
+                "analysis_source": "Gemini AI",
 
-                "failure_summary":
-                    failure_summary,
+                "failure_summary": failure_summary,
 
-                "total_failed":
-                    total_failed,
+                "total_failed": total_failed,
 
-                "revenue_at_risk":
-                    round(
-                        total_failed_amount,
-                        2
-                    ),
+                "revenue_at_risk": round(
+                    total_failed_amount,
+                    2
+                ),
 
-                "potential_recovery":
-                    round(
-                        potential_recovery,
-                        2
-                    )
-
+                "potential_recovery": round(
+                    potential_recovery,
+                    2
+                )
             })
-
 
     # ========================================================
     # LOCAL FALLBACK ANALYSIS
     # ========================================================
 
     sorted_failures = sorted(
-
         failure_summary.items(),
-
-        key=lambda item:
-            item[1]["amount"],
-
+        key=lambda item: item[1]["amount"],
         reverse=True
-
     )
-
 
     if sorted_failures:
 
@@ -2153,43 +1551,34 @@ Keep the analysis concise and business-focused.
     else:
 
         top_data = {
-
             "count": 0,
-
             "amount": 0
-
         }
 
         top_label = "unknown"
 
+    # --------------------------------------------------------
+    # TECHNICAL RECOVERY
+    # --------------------------------------------------------
 
     technical_recovery = 0
 
-
     for reason in [
-
         "upi_timeout",
-
         "bank_timeout"
-
     ]:
 
         if reason in failure_summary:
 
             technical_recovery += (
-
-                failure_summary[
-                    reason
-                ]["amount"]
-
+                failure_summary[reason]["amount"]
                 *
-
-                recovery_probability[
-                    reason
-                ]
-
+                recovery_probability[reason]
             )
 
+    # --------------------------------------------------------
+    # FALLBACK ANALYSIS
+    # --------------------------------------------------------
 
     fallback_analysis = f"""
 TOP RISK
@@ -2219,51 +1608,38 @@ EXPLANATION
 The safest recovery opportunity comes from temporary technical failures because retrying may resolve the issue without changing the payment or customer terms. Permanent or customer-dependent failures require intervention rather than repeated automated retries.
 """
 
-
     add_audit_log(
-
         "SYSTEM",
-
         "ai_revenue_analysis",
-
         "fallback",
-
         (
             "Gemini was unavailable. Local rule-based "
             "revenue recovery analysis was generated."
         )
-
     )
 
-
     return jsonify({
-
         "success": True,
 
-        "analysis":
-            fallback_analysis,
+        "analysis": fallback_analysis,
 
-        "analysis_source":
-            "Recovery Copilot Fallback Analysis",
+        "analysis_source": (
+            "Recovery Copilot Fallback Analysis"
+        ),
 
-        "failure_summary":
-            failure_summary,
+        "failure_summary": failure_summary,
 
-        "total_failed":
-            total_failed,
+        "total_failed": total_failed,
 
-        "revenue_at_risk":
-            round(
-                total_failed_amount,
-                2
-            ),
+        "revenue_at_risk": round(
+            total_failed_amount,
+            2
+        ),
 
-        "potential_recovery":
-            round(
-                potential_recovery,
-                2
-            )
-
+        "potential_recovery": round(
+            potential_recovery,
+            2
+        )
     })
 
 
@@ -2277,91 +1653,58 @@ The safest recovery opportunity comes from temporary technical failures because 
 )
 def recover():
 
-    data = request.get_json(
-        silent=True
-    )
-
+    data = request.get_json(silent=True)
 
     if not data:
 
         return jsonify({
-
             "success": False,
-
-            "message":
+            "message": (
                 "No recovery request received."
-
+            )
         }), 400
 
+    payment_id = data.get("payment_id")
 
-    payment_id = data.get(
-        "payment_id"
-    )
-
-    failure_reason = data.get(
-        "failure_reason"
-    )
-
+    failure_reason = data.get("failure_reason")
 
     if not payment_id:
 
         return jsonify({
-
             "success": False,
-
-            "message":
-                "Payment ID is required."
-
+            "message": "Payment ID is required."
         }), 400
-
 
     if failure_reason not in recovery_actions:
 
         add_audit_log(
-
             payment_id,
-
             "unknown_action",
-
             "blocked",
-
             "Unknown failure reason."
-
         )
 
-
         return jsonify({
-
             "success": False,
-
-            "status":
-                "blocked",
-
-            "message":
-                "Unknown failure reason. Recovery action blocked."
-
+            "status": "blocked",
+            "message": (
+                "Unknown failure reason. "
+                "Recovery action blocked."
+            )
         }), 400
-
 
     recommendation = recovery_actions[
         failure_reason
     ]
 
+    action = recommendation["action"]
 
-    action = recommendation[
-        "action"
-    ]
-
-    risk = recommendation[
-        "risk"
-    ]
-
+    risk = recommendation["risk"]
 
     retry_count = retry_counts.get(
         payment_id,
         0
     )
-
 
     # --------------------------------------------------------
     # MAXIMUM RETRIES
@@ -2375,33 +1718,21 @@ def recover():
         if retry_count >= MAX_RETRIES:
 
             add_audit_log(
-
                 payment_id,
-
                 action,
-
                 "blocked",
-
                 "Maximum retry limit reached."
-
             )
 
-
             return jsonify({
-
                 "success": False,
-
-                "status":
-                    "blocked",
-
-                "message":
-                    "Recovery blocked: maximum of 2 retries reached.",
-
-                "retry_count":
-                    retry_count
-
+                "status": "blocked",
+                "message": (
+                    "Recovery blocked: maximum "
+                    "of 2 retries reached."
+                ),
+                "retry_count": retry_count
             }), 403
-
 
     # --------------------------------------------------------
     # MEDIUM RISK APPROVAL
@@ -2414,37 +1745,24 @@ def recover():
             False
         )
 
-
         if not approved:
 
             add_audit_log(
-
                 payment_id,
-
                 action,
-
                 "approval_required",
-
                 "Merchant approval is required."
-
             )
 
-
             return jsonify({
-
                 "success": False,
-
-                "status":
-                    "approval_required",
-
-                "message":
-                    "Merchant approval is required for this recovery action.",
-
-                "action":
-                    action
-
+                "status": "approval_required",
+                "message": (
+                    "Merchant approval is required "
+                    "for this recovery action."
+                ),
+                "action": action
             }), 403
-
 
     # --------------------------------------------------------
     # INCREASE RETRY COUNT
@@ -2459,13 +1777,11 @@ def recover():
             retry_count + 1
         )
 
-
     # --------------------------------------------------------
     # FIND PAYMENT AMOUNT
     # --------------------------------------------------------
 
     payment_amount = 0
-
 
     for payment in get_payments():
 
@@ -2477,7 +1793,6 @@ def recover():
 
             break
 
-
     # --------------------------------------------------------
     # SIMULATE RECOVERY
     # --------------------------------------------------------
@@ -2486,32 +1801,17 @@ def recover():
         failure_reason
     ]
 
-
     recovered = simulate_recovery(
-
         payment_id,
-
         probability
-
     )
 
-
     recovery_results[payment_id] = {
-
-        "amount":
-            payment_amount,
-
-        "recovered":
-            recovered,
-
-        "failure_reason":
-            failure_reason,
-
-        "action":
-            action
-
+        "amount": payment_amount,
+        "recovered": recovered,
+        "failure_reason": failure_reason,
+        "action": action
     }
-
 
     # --------------------------------------------------------
     # AUDIT RESULT
@@ -2520,17 +1820,14 @@ def recover():
     if recovered:
 
         add_audit_log(
-
             payment_id,
-
             action,
-
             "recovered",
-
-            "Payment successfully recovered in simulation mode."
-
+            (
+                "Payment successfully recovered "
+                "in simulation mode."
+            )
         )
-
 
         status = "recovered"
 
@@ -2539,21 +1836,17 @@ def recover():
             "in simulation mode."
         )
 
-
     else:
 
         add_audit_log(
-
             payment_id,
-
             action,
-
             "not_recovered",
-
-            "Recovery action executed but payment was not recovered."
-
+            (
+                "Recovery action executed but "
+                "payment was not recovered."
+            )
         )
-
 
         status = "not_recovered"
 
@@ -2563,38 +1856,19 @@ def recover():
             "in simulation mode."
         )
 
-
     return jsonify({
-
         "success": True,
-
-        "status":
-            status,
-
-        "payment_id":
+        "status": status,
+        "payment_id": payment_id,
+        "action": action,
+        "amount": payment_amount,
+        "recovered": recovered,
+        "retry_count": retry_counts.get(
             payment_id,
-
-        "action":
-            action,
-
-        "amount":
-            payment_amount,
-
-        "recovered":
-            recovered,
-
-        "retry_count":
-            retry_counts.get(
-                payment_id,
-                0
-            ),
-
-        "message":
-            message,
-
-        "simulation_mode":
-            True
-
+            0
+        ),
+        "message": message,
+        "simulation_mode": True
     })
 
 
@@ -2610,35 +1884,27 @@ def recover_batch():
 
     payments = get_payments()
 
-
     eligible_payments = []
 
+    # --------------------------------------------------------
+    # FIND ELIGIBLE PAYMENTS
+    # --------------------------------------------------------
 
     for payment in payments:
 
         if payment["status"] != "failed":
-
             continue
 
+        payment_id = payment["payment_id"]
 
-        payment_id = payment[
-            "payment_id"
-        ]
-
-        failure_reason = payment[
-            "failure_reason"
-        ]
-
+        failure_reason = payment["failure_reason"]
 
         if failure_reason not in recovery_actions:
-
             continue
-
 
         action = recovery_actions[
             failure_reason
         ]["action"]
-
 
         if action in [
             "retry_payment",
@@ -2650,88 +1916,69 @@ def recover_batch():
                 0
             )
 
-
             if current_retry_count >= MAX_RETRIES:
-
                 continue
-
 
         eligible_payments.append(
             payment
         )
 
+    # --------------------------------------------------------
+    # METRICS
+    # --------------------------------------------------------
 
     attempted = 0
-
     recovered = 0
-
     not_recovered = 0
 
     attempted_amount = 0
-
     recovered_amount = 0
-
     not_recovered_amount = 0
 
+    # --------------------------------------------------------
+    # PROCESS PAYMENTS
+    # --------------------------------------------------------
 
     for payment in eligible_payments:
 
-        payment_id = payment[
-            "payment_id"
-        ]
+        payment_id = payment["payment_id"]
 
-        failure_reason = payment[
-            "failure_reason"
-        ]
+        failure_reason = payment["failure_reason"]
 
         amount = float(
             payment["amount"]
         )
 
-
         recommendation = recovery_actions[
             failure_reason
         ]
 
+        action = recommendation["action"]
 
-        action = recommendation[
-            "action"
-        ]
-
-        risk = recommendation[
-            "risk"
-        ]
-
+        risk = recommendation["risk"]
 
         # ----------------------------------------------------
-        # MEDIUM RISK = MERCHANT APPROVAL REQUIRED
+        # MEDIUM RISK
         # ----------------------------------------------------
 
         if risk == "medium":
 
             add_audit_log(
-
                 payment_id,
-
                 action,
-
                 "approval_required",
-
                 (
                     "Batch recovery skipped: "
                     "merchant approval required."
                 )
-
             )
 
             continue
-
 
         current_retry_count = retry_counts.get(
             payment_id,
             0
         )
-
 
         # ----------------------------------------------------
         # RETRY LIMIT
@@ -2745,27 +1992,20 @@ def recover_batch():
             if current_retry_count >= MAX_RETRIES:
 
                 add_audit_log(
-
                     payment_id,
-
                     action,
-
                     "blocked",
-
                     (
                         "Batch recovery blocked: "
                         "maximum retry limit reached."
                     )
-
                 )
 
                 continue
 
-
             retry_counts[payment_id] = (
                 current_retry_count + 1
             )
-
 
         # ----------------------------------------------------
         # SIMULATE RECOVERY
@@ -2775,37 +2015,25 @@ def recover_batch():
             failure_reason
         ]
 
-
         recovered_result = simulate_recovery(
-
             payment_id,
-
             probability
-
         )
-
 
         attempted += 1
 
         attempted_amount += amount
 
-
         recovery_results[payment_id] = {
-
-            "amount":
-                amount,
-
-            "recovered":
-                recovered_result,
-
-            "failure_reason":
-                failure_reason,
-
-            "action":
-                action
-
+            "amount": amount,
+            "recovered": recovered_result,
+            "failure_reason": failure_reason,
+            "action": action
         }
 
+        # ----------------------------------------------------
+        # RECOVERY SUCCESS
+        # ----------------------------------------------------
 
         if recovered_result:
 
@@ -2813,22 +2041,19 @@ def recover_batch():
 
             recovered_amount += amount
 
-
             add_audit_log(
-
                 payment_id,
-
                 action,
-
                 "recovered",
-
                 (
                     "Payment recovered successfully "
                     "in batch simulation mode."
                 )
-
             )
 
+        # ----------------------------------------------------
+        # RECOVERY FAILURE
+        # ----------------------------------------------------
 
         else:
 
@@ -2836,84 +2061,71 @@ def recover_batch():
 
             not_recovered_amount += amount
 
-
             add_audit_log(
-
                 payment_id,
-
                 action,
-
                 "not_recovered",
-
                 (
                     "Batch recovery attempted but "
                     "payment was not recovered."
                 )
-
             )
 
+    # --------------------------------------------------------
+    # RECOVERY RATE
+    # --------------------------------------------------------
 
     if attempted > 0:
 
         recovery_rate = (
-            recovered
-            /
-            attempted
+            recovered / attempted
         ) * 100
 
     else:
 
         recovery_rate = 0
 
-
     return jsonify({
-
         "success": True,
 
-        "eligible_payments":
-            len(
-                eligible_payments
-            ),
+        "eligible_payments": len(
+            eligible_payments
+        ),
 
-        "attempted_transactions":
-            attempted,
+        "attempted_transactions": attempted,
 
-        "recovered_transactions":
-            recovered,
+        "recovered_transactions": recovered,
 
-        "not_recovered_transactions":
-            not_recovered,
+        "not_recovered_transactions": (
+            not_recovered
+        ),
 
-        "attempted_amount":
-            round(
-                attempted_amount,
-                2
-            ),
+        "attempted_amount": round(
+            attempted_amount,
+            2
+        ),
 
-        "recovered_amount":
-            round(
-                recovered_amount,
-                2
-            ),
+        "recovered_amount": round(
+            recovered_amount,
+            2
+        ),
 
-        "not_recovered_amount":
-            round(
-                not_recovered_amount,
-                2
-            ),
+        "not_recovered_amount": round(
+            not_recovered_amount,
+            2
+        ),
 
-        "recovery_rate":
-            round(
-                recovery_rate,
-                2
-            ),
+        "recovery_rate": round(
+            recovery_rate,
+            2
+        ),
 
-        "message":
-            "Batch recovery completed in simulation mode.",
+        "message": (
+            "Batch recovery completed "
+            "in simulation mode."
+        ),
 
-        "simulation_mode":
-            True
-
+        "simulation_mode": True
     })
 
 
@@ -2921,31 +2133,24 @@ def recover_batch():
 # RECOVERY METRICS
 # ============================================================
 
-@app.route(
-    "/api/recovery-metrics"
-)
+@app.route("/api/recovery-metrics")
 def recovery_metrics():
 
     total_recovery_attempts = len(
         recovery_results
     )
 
-
     recovered_transactions = 0
-
     not_recovered_transactions = 0
 
     recovered_amount = 0
-
     not_recovered_amount = 0
-
 
     for result in recovery_results.values():
 
         amount = float(
             result["amount"]
         )
-
 
         if result["recovered"]:
 
@@ -2959,13 +2164,11 @@ def recovery_metrics():
 
             not_recovered_amount += amount
 
-
     total_attempted_amount = (
         recovered_amount
         +
         not_recovered_amount
     )
-
 
     if total_recovery_attempts > 0:
 
@@ -2979,45 +2182,40 @@ def recovery_metrics():
 
         recovery_rate = 0
 
-
     return jsonify({
+        "total_recovery_attempts": (
+            total_recovery_attempts
+        ),
 
-        "total_recovery_attempts":
-            total_recovery_attempts,
+        "recovered_transactions": (
+            recovered_transactions
+        ),
 
-        "recovered_transactions":
-            recovered_transactions,
+        "not_recovered_transactions": (
+            not_recovered_transactions
+        ),
 
-        "not_recovered_transactions":
-            not_recovered_transactions,
+        "recovered_amount": round(
+            recovered_amount,
+            2
+        ),
 
-        "recovered_amount":
-            round(
-                recovered_amount,
-                2
-            ),
+        "not_recovered_amount": round(
+            not_recovered_amount,
+            2
+        ),
 
-        "not_recovered_amount":
-            round(
-                not_recovered_amount,
-                2
-            ),
+        "total_attempted_amount": round(
+            total_attempted_amount,
+            2
+        ),
 
-        "total_attempted_amount":
-            round(
-                total_attempted_amount,
-                2
-            ),
+        "recovery_rate": round(
+            recovery_rate,
+            2
+        ),
 
-        "recovery_rate":
-            round(
-                recovery_rate,
-                2
-            ),
-
-        "simulation_mode":
-            True
-
+        "simulation_mode": True
     })
 
 
@@ -3025,19 +2223,12 @@ def recovery_metrics():
 # AUDIT TRAIL
 # ============================================================
 
-@app.route(
-    "/api/audit"
-)
+@app.route("/api/audit")
 def audit():
 
     return jsonify({
-
-        "total_actions":
-            len(audit_log),
-
-        "logs":
-            audit_log
-
+        "total_actions": len(audit_log),
+        "logs": audit_log
     })
 
 
@@ -3048,44 +2239,36 @@ def audit():
 if __name__ == "__main__":
 
     print()
-
     print("=" * 60)
-
     print("RECOVERY COPILOT")
-
     print("=" * 60)
 
+    # --------------------------------------------------------
+    # RAZORPAY STATUS
+    # --------------------------------------------------------
 
     if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET:
 
-        print(
-            "Razorpay: TEST MODE"
-        )
+        print("Razorpay: TEST MODE")
 
     else:
 
-        print(
-            "Razorpay: NOT CONFIGURED"
-        )
+        print("Razorpay: NOT CONFIGURED")
 
+    # --------------------------------------------------------
+    # GEMINI STATUS
+    # --------------------------------------------------------
 
     if GEMINI_API_KEY:
 
-        print(
-            "Gemini AI: CONFIGURED"
-        )
+        print("Gemini AI: CONFIGURED")
 
     else:
 
-        print(
-            "Gemini AI: NOT CONFIGURED"
-        )
-
+        print("Gemini AI: NOT CONFIGURED")
 
     print("=" * 60)
-
     print()
-
 
     app.run(
         debug=True
