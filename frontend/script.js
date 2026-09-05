@@ -1,3 +1,7 @@
+// ============================================================
+// API URLs
+// ============================================================
+
 const API_URL = "http://127.0.0.1:5000/api/summary";
 const RECOMMENDATIONS_URL = "http://127.0.0.1:5000/api/recommendations";
 const FAILURES_URL = "http://127.0.0.1:5000/api/failures";
@@ -8,357 +12,1417 @@ const RECOVERY_METRICS_URL = "http://127.0.0.1:5000/api/recovery-metrics";
 const BATCH_RECOVERY_URL = "http://127.0.0.1:5000/api/recover-batch";
 const AI_ANALYSIS_URL = "http://127.0.0.1:5000/api/ai-analysis";
 
+// ============================================================
+// Dataset URLs
+// ============================================================
 
-// =========================
-// Load Payment Summary
-// =========================
+const UPLOAD_URL = "http://127.0.0.1:5000/api/upload";
+const RESET_DEMO_URL = "http://127.0.0.1:5000/api/reset-demo";
+const DATASET_URL = "http://127.0.0.1:5000/api/dataset";
 
-function loadPaymentSummary() {
+// ============================================================
+// Razorpay Test Mode URLs
+// ============================================================
 
-    fetch(API_URL)
+const RAZORPAY_CONFIG_URL =
+    "http://127.0.0.1:5000/api/razorpay/config";
 
-        .then(response => response.json())
+const RAZORPAY_CREATE_ORDER_URL =
+    "http://127.0.0.1:5000/api/razorpay/create-order";
 
+const RAZORPAY_VERIFY_URL =
+    "http://127.0.0.1:5000/api/razorpay/verify-payment";
+
+const RAZORPAY_FAILED_URL =
+    "http://127.0.0.1:5000/api/razorpay/payment-failed";
+
+const RAZORPAY_TRANSACTIONS_URL =
+    "http://127.0.0.1:5000/api/razorpay/transactions";
+
+// ============================================================
+// Razorpay Current Transaction State
+// ============================================================
+
+let currentRazorpayOrderId = "";
+let currentRazorpayAmount = 2999;
+
+// ============================================================
+// Helper Functions
+// ============================================================
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+
+    if (element) {
+        element.textContent = value;
+    }
+}
+
+function formatCurrency(value) {
+    return "₹" + Number(value || 0).toLocaleString("en-IN");
+}
+
+function formatReason(value) {
+    return String(value || "")
+        .replaceAll("_", " ")
+        .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+// ============================================================
+// Clean Gemini AI Text
+// ============================================================
+
+function cleanAIText(text) {
+    if (!text) {
+        return "Not available";
+    }
+
+    return String(text)
+        // Remove markdown headings
+        .replace(/^#{1,6}\s*/gm, "")
+
+        // Remove bold / italic markdown
+        .replace(/\*\*(.*?)\*\*/g, "$1")
+        .replace(/\*(.*?)\*/g, "$1")
+
+        // Remove escaped asterisks
+        .replace(/\\\*/g, "")
+
+        // Remove backticks
+        .replace(/`/g, "")
+
+        // Remove markdown horizontal lines
+        .replace(/^[-_]{3,}$/gm, "")
+
+        // Remove excessive spaces
+        .replace(/[ \t]+/g, " ")
+
+        // Convert multiple new lines to one space
+        .replace(/\n+/g, " ")
+
+        .trim();
+}
+
+// ============================================================
+// Razorpay Checkout Script
+// ============================================================
+
+function loadRazorpayCheckout() {
+    return new Promise((resolve, reject) => {
+
+        if (window.Razorpay) {
+            resolve();
+            return;
+        }
+
+        const existingScript = document.querySelector(
+            'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
+        );
+
+        if (existingScript) {
+            existingScript.onload = () => resolve();
+
+            existingScript.onerror = () => {
+                reject(
+                    new Error(
+                        "Could not load Razorpay Checkout."
+                    )
+                );
+            };
+
+            return;
+        }
+
+        const script = document.createElement("script");
+
+        script.src =
+            "https://checkout.razorpay.com/v1/checkout.js";
+
+        script.onload = () => resolve();
+
+        script.onerror = () => {
+            reject(
+                new Error(
+                    "Could not load Razorpay Checkout."
+                )
+            );
+        };
+
+        document.head.appendChild(script);
+    });
+}
+
+// ============================================================
+// Test Razorpay Payment
+// ============================================================
+
+async function startRazorpayTestPayment() {
+
+    const button = document.getElementById(
+        "razorpay-test-button"
+    );
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Opening Test Checkout...";
+    }
+
+    try {
+
+        await loadRazorpayCheckout();
+
+        // ----------------------------------------------------
+        // Get Razorpay configuration
+        // ----------------------------------------------------
+
+        const configResponse = await fetch(
+            RAZORPAY_CONFIG_URL,
+            {
+                cache: "no-store"
+            }
+        );
+
+        if (!configResponse.ok) {
+            throw new Error(
+                "Could not connect to Razorpay configuration."
+            );
+        }
+
+        const config = await configResponse.json();
+
+        if (!config.success) {
+            throw new Error(
+                config.message ||
+                "Razorpay configuration unavailable."
+            );
+        }
+
+        // ----------------------------------------------------
+        // Create Test Order
+        // ----------------------------------------------------
+
+        const orderResponse = await fetch(
+            RAZORPAY_CREATE_ORDER_URL,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    amount: 2999
+                })
+            }
+        );
+
+        if (!orderResponse.ok) {
+            throw new Error(
+                "Could not create Razorpay test order."
+            );
+        }
+
+        const orderData = await orderResponse.json();
+
+        if (!orderData.success) {
+            throw new Error(
+                orderData.message ||
+                "Could not create Razorpay test order."
+            );
+        }
+
+        // ----------------------------------------------------
+        // Store current order
+        // ----------------------------------------------------
+
+        currentRazorpayOrderId =
+            orderData.order_id;
+
+        currentRazorpayAmount = 2999;
+
+        // ----------------------------------------------------
+        // Razorpay Checkout Options
+        // ----------------------------------------------------
+
+        const options = {
+
+            key: orderData.key_id,
+
+            amount: orderData.amount,
+
+            currency: orderData.currency || "INR",
+
+            name: "Recovery Copilot",
+
+            description: "Razorpay Test Payment",
+
+            order_id: orderData.order_id,
+
+            handler: async function (response) {
+
+                await handleRazorpaySuccess(response);
+            },
+
+            modal: {
+
+                ondismiss: function () {
+
+                    resetRazorpayButton();
+
+                    console.log(
+                        "Razorpay checkout closed."
+                    );
+                }
+            },
+
+            theme: {
+                color: "#38bdf8"
+            }
+        };
+
+        // ----------------------------------------------------
+        // Create Razorpay instance
+        // ----------------------------------------------------
+
+        const razorpay = new Razorpay(options);
+
+        // ----------------------------------------------------
+        // Handle Failed Payment
+        // ----------------------------------------------------
+
+        razorpay.on(
+            "payment.failed",
+            async function (response) {
+
+                await handleRazorpayFailure(response);
+            }
+        );
+
+        // ----------------------------------------------------
+        // Open Checkout
+        // ----------------------------------------------------
+
+        razorpay.open();
+
+    }
+    catch (error) {
+
+        console.error(
+            "Razorpay Test Payment Error:",
+            error
+        );
+
+        alert(
+            "Could not start Razorpay Test Payment.\n\n" +
+            error.message
+        );
+
+        resetRazorpayButton();
+    }
+}
+
+// ============================================================
+// Razorpay Successful Payment
+// ============================================================
+
+async function handleRazorpaySuccess(response) {
+
+    try {
+
+        const verifyResponse = await fetch(
+            RAZORPAY_VERIFY_URL,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+
+                    razorpay_order_id:
+                        response.razorpay_order_id,
+
+                    razorpay_payment_id:
+                        response.razorpay_payment_id,
+
+                    razorpay_signature:
+                        response.razorpay_signature
+                })
+            }
+        );
+
+        if (!verifyResponse.ok) {
+            throw new Error(
+                "Payment verification request failed."
+            );
+        }
+
+        const data = await verifyResponse.json();
+
+        if (data.success) {
+
+            alert(
+                "Razorpay Test Payment Successful!\n\n" +
+                "Payment ID: " +
+                response.razorpay_payment_id +
+                "\n\n" +
+                "This was a TEST MODE payment."
+            );
+
+        }
+        else {
+
+            alert(
+                "Payment received but verification failed."
+            );
+        }
+
+        await loadRecoveryMetrics();
+        await loadAuditTrail();
+        await loadRazorpayTransactions();
+
+    }
+    catch (error) {
+
+        console.error(
+            "Payment verification error:",
+            error
+        );
+
+        alert(
+            "Payment verification failed.\n\n" +
+            error.message
+        );
+
+    }
+    finally {
+
+        resetRazorpayButton();
+
+        currentRazorpayOrderId = "";
+
+        currentRazorpayAmount = 2999;
+    }
+}
+
+// ============================================================
+// Razorpay Failed Payment
+// ============================================================
+
+async function handleRazorpayFailure(response) {
+
+    console.log(
+        "Razorpay test payment failed:",
+        response
+    );
+
+    const paymentError =
+        response.error || {};
+
+    const paymentId =
+        paymentError.metadata?.payment_id ||
+        paymentError.metadata?.paymentId ||
+        "";
+
+    const orderId =
+        paymentError.metadata?.order_id ||
+        paymentError.metadata?.orderId ||
+        currentRazorpayOrderId ||
+        "";
+
+    // Demo classification
+    const reason = "bank_timeout";
+
+    try {
+
+        const failureResponse = await fetch(
+            RAZORPAY_FAILED_URL,
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    payment_id: paymentId,
+
+                    order_id: orderId,
+
+                    amount: currentRazorpayAmount,
+
+                    failure_reason: reason,
+
+                    status: "failed",
+
+                    source: "razorpay_test_mode"
+                })
+            }
+        );
+
+        if (!failureResponse.ok) {
+
+            let errorData = {};
+
+            try {
+                errorData =
+                    await failureResponse.json();
+            }
+            catch {
+                errorData = {};
+            }
+
+            throw new Error(
+                errorData.message ||
+                "Recovery Copilot could not process the failed payment."
+            );
+        }
+
+        const failureData =
+            await failureResponse.json();
+
+        console.log(
+            "Razorpay recovery response:",
+            failureData
+        );
+
+        await loadRecoveryMetrics();
+
+        await loadAuditTrail();
+
+        await loadRazorpayTransactions();
+
+        const statusText =
+            failureData.status ||
+            "not_recovered";
+
+        const actionText =
+            failureData.action ||
+            "recovery_action";
+
+        const retryCount =
+            failureData.retry_count ?? 0;
+
+        alert(
+            "Razorpay Test Payment Failed.\n\n" +
+
+            "Recovery Copilot detected the failed payment.\n\n" +
+
+            "Recovery Action: " +
+            formatReason(actionText) +
+
+            "\n\n" +
+
+            "Status: " +
+            formatReason(statusText) +
+
+            "\n\n" +
+
+            "Retry Count: " +
+            retryCount +
+
+            "\n\n" +
+
+            "Reason: " +
+            formatReason(reason) +
+
+            "\n\n" +
+
+            "TEST MODE — No real money was processed."
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "Failed payment logging error:",
+            error
+        );
+
+        try {
+
+            await loadRecoveryMetrics();
+
+            await loadAuditTrail();
+
+        }
+        catch (refreshError) {
+
+            console.error(
+                "Dashboard refresh error:",
+                refreshError
+            );
+        }
+
+        alert(
+            "Payment failed, but the Recovery Copilot " +
+            "could not record the event.\n\n" +
+            error.message
+        );
+
+    }
+    finally {
+
+        resetRazorpayButton();
+
+        currentRazorpayOrderId = "";
+
+        currentRazorpayAmount = 2999;
+    }
+}
+
+// ============================================================
+// Load Razorpay Transactions
+// ============================================================
+
+async function loadRazorpayTransactions() {
+
+    try {
+
+        const response = await fetch(
+            RAZORPAY_TRANSACTIONS_URL,
+            {
+                cache: "no-store"
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                "Could not load Razorpay transactions."
+            );
+        }
+
+        const data = await response.json();
+
+        console.log(
+            "Razorpay transactions:",
+            data
+        );
+
+        return data;
+
+    }
+    catch (error) {
+
+        console.log(
+            "Razorpay transactions error:",
+            error
+        );
+
+        return null;
+    }
+}
+
+// ============================================================
+// Reset Razorpay Button
+// ============================================================
+
+function resetRazorpayButton() {
+
+    const button =
+        document.getElementById(
+            "razorpay-test-button"
+        );
+
+    if (button) {
+
+        button.disabled = false;
+
+        button.textContent =
+            "Test Razorpay Payment";
+    }
+}
+
+// ============================================================
+// Connect Razorpay Button
+// ============================================================
+
+function setupRazorpayButton() {
+
+    const button =
+        document.getElementById(
+            "razorpay-test-button"
+        );
+
+    if (!button) {
+        return;
+    }
+
+    button.addEventListener(
+        "click",
+        startRazorpayTestPayment
+    );
+}
+
+// ============================================================
+// Load Dataset Information
+// ============================================================
+
+async function loadDatasetInfo() {
+
+    try {
+
+        const response = await fetch(
+            DATASET_URL,
+            {
+                cache: "no-store"
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                "Could not load dataset information."
+            );
+        }
+
+        const data =
+            await response.json();
+
+        setText(
+            "dataset-type",
+            data.dataset_type ||
+            "Demo Dataset"
+        );
+
+        setText(
+            "dataset-total",
+            data.total_payments || 0
+        );
+
+    }
+    catch (error) {
+
+        console.log(
+            "Error loading dataset information:",
+            error
+        );
+    }
+}
+
+// ============================================================
+// Upload Payment CSV
+// ============================================================
+
+function uploadPaymentCSV() {
+
+    const fileInput =
+        document.getElementById(
+            "payment-csv"
+        );
+
+    const uploadButton =
+        document.getElementById(
+            "upload-button"
+        );
+
+    const message =
+        document.getElementById(
+            "upload-message"
+        );
+
+    if (
+        !fileInput ||
+        !fileInput.files.length
+    ) {
+
+        if (message) {
+            message.textContent =
+                "Please choose a CSV file first.";
+        }
+
+        return;
+    }
+
+    const file =
+        fileInput.files[0];
+
+    if (
+        !file.name
+            .toLowerCase()
+            .endsWith(".csv")
+    ) {
+
+        if (message) {
+            message.textContent =
+                "Please upload a CSV file.";
+        }
+
+        return;
+    }
+
+    const formData =
+        new FormData();
+
+    formData.append(
+        "file",
+        file
+    );
+
+    if (uploadButton) {
+
+        uploadButton.disabled = true;
+
+        uploadButton.textContent =
+            "Uploading...";
+    }
+
+    if (message) {
+
+        message.textContent =
+            "Uploading and analyzing your dataset...";
+    }
+
+    fetch(
+        UPLOAD_URL,
+        {
+            method: "POST",
+            body: formData
+        }
+    )
+        .then(async response => {
+
+            const data =
+                await response.json();
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.message ||
+                    "Dataset upload failed."
+                );
+            }
+
+            return data;
+        })
         .then(data => {
 
-            document.getElementById("total-payments").textContent =
-                data.total_payments;
+            if (!data.success) {
 
-            document.getElementById("successful-payments").textContent =
-                data.successful_payments;
+                if (message) {
 
-            document.getElementById("failed-payments").textContent =
-                data.failed_payments;
+                    message.textContent =
+                        data.message ||
+                        "Dataset upload failed.";
+                }
 
-            document.getElementById("failure-rate").textContent =
-                data.failure_rate + "%";
+                return;
+            }
 
-            document.getElementById("revenue-at-risk").textContent =
-                "₹" + Number(data.revenue_at_risk).toLocaleString("en-IN");
+            if (message) {
 
-            document.getElementById("potential-recovery").textContent =
-                "₹" + Number(data.potential_recovery).toLocaleString("en-IN");
+                message.textContent =
+                    "Dataset uploaded successfully!";
+            }
 
+            fileInput.value = "";
+
+            loadDatasetInfo();
+
+            refreshDashboard();
+
+            loadAIAnalysis();
         })
-
         .catch(error => {
 
             console.log(
-                "Error loading payment summary:",
+                "Dataset upload error:",
                 error
             );
 
+            if (message) {
+
+                message.textContent =
+                    "Could not connect to the server.";
+            }
+
+        })
+        .finally(() => {
+
+            if (uploadButton) {
+
+                uploadButton.disabled = false;
+
+                uploadButton.textContent =
+                    "Upload Dataset";
+            }
         });
 }
 
+// ============================================================
+// Reset to Demo Dataset
+// ============================================================
 
-// =========================
-// Load Failed Payments
-// =========================
+function resetDemoDataset() {
 
-function loadFailedPayments() {
+    const button =
+        document.getElementById(
+            "reset-demo-button"
+        );
 
-    fetch(PAYMENTS_URL)
+    const message =
+        document.getElementById(
+            "upload-message"
+        );
 
-        .then(response => response.json())
+    if (button) {
 
+        button.disabled = true;
+
+        button.textContent =
+            "Loading Demo...";
+    }
+
+    if (message) {
+
+        message.textContent =
+            "Switching to demo dataset...";
+    }
+
+    fetch(
+        RESET_DEMO_URL,
+        {
+            method: "POST",
+
+            headers: {
+                "Content-Type":
+                    "application/json"
+            },
+
+            body: JSON.stringify({})
+        }
+    )
+        .then(async response => {
+
+            const data =
+                await response.json();
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.message ||
+                    "Could not load demo dataset."
+                );
+            }
+
+            return data;
+        })
         .then(data => {
 
-            const container =
-                document.getElementById("failures-container");
+            if (!data.success) {
 
-            container.innerHTML = "";
+                if (message) {
 
-            data.forEach(payment => {
+                    message.textContent =
+                        data.message ||
+                        "Could not load demo dataset.";
+                }
 
-                const card =
-                    document.createElement("div");
+                return;
+            }
 
-                card.className = "failure-card";
+            if (message) {
 
-                card.innerHTML = `
+                message.textContent =
+                    "Demo dataset loaded.";
+            }
 
-                    <h3>
-                        ${payment.payment_id}
-                    </h3>
+            loadDatasetInfo();
 
-                    <p>
-                        <strong>Amount:</strong>
-                        ₹${Number(payment.amount).toLocaleString("en-IN")}
-                    </p>
+            refreshDashboard();
 
-                    <p>
-                        <strong>Reason:</strong>
-                        ${payment.failure_reason.replaceAll("_", " ")}
-                    </p>
-
-                    <p>
-                        <strong>Customer:</strong>
-                        ${payment.customer_type}
-                    </p>
-
-                    <button
-                        class="recover-button"
-                        onclick="executeRecovery(
-                            '${payment.payment_id}',
-                            '${payment.failure_reason}'
-                        )">
-
-                        Execute Recovery
-
-                    </button>
-
-                `;
-
-                container.appendChild(card);
-
-            });
-
+            loadAIAnalysis();
         })
-
         .catch(error => {
 
             console.log(
-                "Error loading failed payments:",
+                "Demo dataset error:",
                 error
             );
 
+            if (message) {
+
+                message.textContent =
+                    "Could not connect to the server.";
+            }
+
+        })
+        .finally(() => {
+
+            if (button) {
+
+                button.disabled = false;
+
+                button.textContent =
+                    "Use Demo Dataset";
+            }
+        });
+}
+
+// ============================================================
+// Refresh Entire Dashboard
+// ============================================================
+
+function refreshDashboard() {
+
+    loadPaymentSummary();
+
+    loadFailedPayments();
+
+    loadRecommendations();
+
+    loadFailureAnalysis();
+
+    loadRecoveryMetrics();
+
+    loadAuditTrail();
+
+    loadOpportunityChart();
+
+    loadDatasetInfo();
+}
+
+// ============================================================
+// Load Payment Summary
+// ============================================================
+
+async function loadPaymentSummary() {
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL,
+                {
+                    cache: "no-store"
+                }
+            );
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Payment summary request failed."
+            );
+        }
+
+        const data =
+            await response.json();
+
+        setText(
+            "total-payments",
+            data.total_payments ?? 0
+        );
+
+        setText(
+            "successful-payments",
+            data.successful_payments ?? 0
+        );
+
+        setText(
+            "failed-payments",
+            data.failed_payments ?? 0
+        );
+
+        setText(
+            "failure-rate",
+            (data.failure_rate ?? 0) + "%"
+        );
+
+        setText(
+            "revenue-at-risk",
+            formatCurrency(
+                data.revenue_at_risk
+            )
+        );
+
+        setText(
+            "potential-recovery",
+            formatCurrency(
+                data.potential_recovery
+            )
+        );
+
+    }
+    catch (error) {
+
+        console.log(
+            "Error loading payment summary:",
+            error
+        );
+    }
+}
+
+// ============================================================
+// Load Failed Payments
+// ============================================================
+
+async function loadFailedPayments() {
+
+    try {
+
+        const response =
+            await fetch(
+                PAYMENTS_URL,
+                {
+                    cache: "no-store"
+                }
+            );
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Could not load failed payments."
+            );
+        }
+
+        const data =
+            await response.json();
+
+        const container =
             document.getElementById(
                 "failures-container"
-            ).innerHTML = `
+            );
 
+        if (!container) {
+            return;
+        }
+
+        container.innerHTML = "";
+
+        const samplePayments =
+            Array.isArray(data)
+                ? data.slice(0, 10)
+                : [];
+
+        const info =
+            document.createElement("p");
+
+        info.className =
+            "failure-list-info";
+
+        info.textContent =
+            `Showing ${samplePayments.length} of ${data.length} failed payments`;
+
+        container.appendChild(info);
+
+        samplePayments.forEach(payment => {
+
+            const card =
+                document.createElement("div");
+
+            card.className =
+                "failure-card";
+
+            const paymentId =
+                String(
+                    payment.payment_id || ""
+                );
+
+            const failureReason =
+                String(
+                    payment.failure_reason || ""
+                );
+
+            const customerType =
+                String(
+                    payment.customer_type || ""
+                );
+
+            card.innerHTML = `
+                <h3>${paymentId}</h3>
+
+                <p>
+                    <strong>Amount:</strong>
+                    ${formatCurrency(payment.amount)}
+                </p>
+
+                <p>
+                    <strong>Reason:</strong>
+                    ${formatReason(failureReason)}
+                </p>
+
+                <p>
+                    <strong>Customer:</strong>
+                    ${formatReason(customerType)}
+                </p>
+
+                <button
+                    class="recover-button"
+                    onclick="executeRecovery('${paymentId}', '${failureReason}')"
+                >
+                    Execute Recovery
+                </button>
+            `;
+
+            container.appendChild(card);
+        });
+
+    }
+    catch (error) {
+
+        console.log(
+            "Error loading failed payments:",
+            error
+        );
+
+        const container =
+            document.getElementById(
+                "failures-container"
+            );
+
+        if (container) {
+
+            container.innerHTML = `
                 <p>
                     Unable to load failed payments.
                 </p>
-
             `;
-
-        });
+        }
+    }
 }
 
-
-// =========================
+// ============================================================
 // Load Recovery Recommendations
-// =========================
+// ============================================================
 
-function loadRecommendations() {
+async function loadRecommendations() {
 
-    fetch(RECOMMENDATIONS_URL)
+    try {
 
-        .then(response => response.json())
-
-        .then(data => {
-
-            const container =
-                document.getElementById(
-                    "recommendations-container"
-                );
-
-            container.innerHTML = "";
-
-            for (const reason in data) {
-
-                const recommendation =
-                    data[reason];
-
-                const card =
-                    document.createElement("div");
-
-                card.className =
-                    "recommendation-card";
-
-                card.innerHTML = `
-
-                    <h3>
-                        ${reason.replaceAll("_", " ")}
-                    </h3>
-
-                    <p>
-                        <strong>Action:</strong>
-                        ${recommendation.action}
-                    </p>
-
-                    <p>
-                        <strong>Risk:</strong>
-                        ${recommendation.risk}
-                    </p>
-
-                    <p>
-                        <strong>Why:</strong>
-                        ${recommendation.reason}
-                    </p>
-
-                `;
-
-                container.appendChild(card);
-
-            }
-
-        })
-
-        .catch(error => {
-
-            console.log(
-                "Error loading recommendations:",
-                error
+        const response =
+            await fetch(
+                RECOMMENDATIONS_URL,
+                {
+                    cache: "no-store"
+                }
             );
 
-        });
+        if (!response.ok) {
+
+            throw new Error(
+                "Could not load recommendations."
+            );
+        }
+
+        const data =
+            await response.json();
+
+        const container =
+            document.getElementById(
+                "recommendations-container"
+            );
+
+        if (!container) {
+            return;
+        }
+
+        container.innerHTML = "";
+
+        for (const reason in data) {
+
+            const recommendation =
+                data[reason];
+
+            const card =
+                document.createElement("div");
+
+            card.className =
+                "recommendation-card";
+
+            card.innerHTML = `
+                <h3>
+                    ${formatReason(reason)}
+                </h3>
+
+                <p>
+                    <strong>Action:</strong>
+                    ${formatReason(recommendation.action)}
+                </p>
+
+                <p>
+                    <strong>Risk:</strong>
+                    ${formatReason(recommendation.risk)}
+                </p>
+
+                <p>
+                    <strong>Why:</strong>
+                    ${cleanAIText(recommendation.reason)}
+                </p>
+            `;
+
+            container.appendChild(card);
+        }
+
+    }
+    catch (error) {
+
+        console.log(
+            "Error loading recommendations:",
+            error
+        );
+    }
 }
 
-
-// =========================
+// ============================================================
 // Load Recovery Opportunity
-// =========================
+// ============================================================
 
-function loadOpportunityChart() {
+async function loadOpportunityChart() {
 
-    fetch(FAILURES_URL)
+    try {
 
-        .then(response => response.json())
+        const response =
+            await fetch(
+                FAILURES_URL,
+                {
+                    cache: "no-store"
+                }
+            );
 
-        .then(data => {
+        if (!response.ok) {
 
-            const payments =
-                Array.isArray(data)
-                    ? data
-                    : (data.failures || []);
+            throw new Error(
+                "Could not load failure data."
+            );
+        }
 
-            const totals = {};
+        const data =
+            await response.json();
 
-            payments.forEach(payment => {
+        const payments =
+            Array.isArray(data)
+                ? data
+                : (data.failures || []);
 
-                const reason =
-                    payment.failure_reason || "unknown";
+        const totals = {};
 
-                const amount =
-                    Number(payment.amount || 0);
+        payments.forEach(payment => {
 
-                totals[reason] =
-                    (totals[reason] || 0) + amount;
+            const reason =
+                payment.failure_reason ||
+                "unknown";
 
-            });
-
-            const entries =
-                Object.entries(totals)
-                    .sort((a, b) => b[1] - a[1]);
-
-            const maxAmount =
-                entries.length
-                    ? entries[0][1]
-                    : 1;
-
-            const container =
-                document.getElementById(
-                    "opportunity-chart"
+            const amount =
+                Number(
+                    payment.amount || 0
                 );
 
-            if (!container) {
+            totals[reason] =
+                (totals[reason] || 0) +
+                amount;
+        });
 
-                console.log(
-                    "Opportunity chart container not found."
+        const entries =
+            Object.entries(totals)
+                .sort(
+                    (a, b) =>
+                        b[1] - a[1]
                 );
 
-                return;
+        const maxAmount =
+            entries.length
+                ? entries[0][1]
+                : 1;
 
-            }
+        const container =
+            document.getElementById(
+                "opportunity-chart"
+            );
 
-            if (entries.length === 0) {
+        if (!container) {
+            return;
+        }
 
-                container.innerHTML = `
-                    <p>
-                        No recovery opportunity data available.
-                    </p>
-                `;
+        if (entries.length === 0) {
 
-                return;
+            container.innerHTML = `
+                <p>
+                    No recovery opportunity data available.
+                </p>
+            `;
 
-            }
+            return;
+        }
 
-            container.innerHTML =
+        container.innerHTML =
+            entries
+                .map(
+                    ([reason, amount]) => {
 
-                entries.map(([reason, amount]) => {
+                        const width =
+                            (amount / maxAmount) *
+                            100;
 
-                    const width =
-                        (amount / maxAmount) * 100;
+                        const label =
+                            formatReason(reason);
 
-                    const label =
-                        reason.replaceAll("_", " ");
+                        return `
+                            <div class="chart-row">
 
-                    return `
+                                <div class="chart-label">
 
-                        <div class="chart-row">
+                                    <span>
+                                        ${label}
+                                    </span>
 
-                            <div class="chart-label">
+                                    <strong>
+                                        ${formatCurrency(amount)}
+                                    </strong>
 
-                                <span>
-                                    ${label}
-                                </span>
+                                </div>
 
-                                <strong>
-                                    ₹${amount.toLocaleString("en-IN")}
-                                </strong>
+                                <div class="chart-track">
 
-                            </div>
+                                    <div
+                                        class="chart-bar"
+                                        style="width:${width}%;">
+                                    </div>
 
-                            <div class="chart-track">
-
-                                <div
-                                    class="chart-bar"
-                                    style="width:${width}%;">
                                 </div>
 
                             </div>
+                        `;
+                    }
+                )
+                .join("");
 
-                        </div>
+    }
+    catch (error) {
 
-                    `;
+        console.error(
+            "Opportunity chart error:",
+            error
+        );
 
-                }).join("");
-
-        })
-
-        .catch(error => {
-
-            console.error(
-                "Opportunity chart error:",
-                error
+        const container =
+            document.getElementById(
+                "opportunity-chart"
             );
 
-            const container =
-                document.getElementById(
-                    "opportunity-chart"
-                );
+        if (container) {
 
-            if (container) {
-
-                container.innerHTML = `
-
-                    <p>
-                        Unable to load recovery opportunity data.
-                    </p>
-
-                `;
-
-            }
-
-        });
+            container.innerHTML = `
+                <p>
+                    Unable to load recovery opportunity data.
+                </p>
+            `;
+        }
+    }
 }
 
-
-// =========================
+// ============================================================
 // Load AI Recovery Analysis
-// =========================
+// ============================================================
 
-function loadAIAnalysis() {
+async function loadAIAnalysis() {
 
     const container =
         document.getElementById(
             "ai-analysis-container"
         );
 
-    container.innerHTML = `
+    if (!container) {
+        return;
+    }
 
+    container.innerHTML = `
         <div class="ai-loading">
 
             <div class="ai-spinner"></div>
@@ -373,360 +1437,420 @@ function loadAIAnalysis() {
             </p>
 
         </div>
-
     `;
 
-    fetch(AI_ANALYSIS_URL)
+    try {
 
-        .then(response => response.json())
+        const response =
+            await fetch(
+                AI_ANALYSIS_URL,
+                {
+                    cache: "no-store"
+                }
+            );
 
-        .then(data => {
+        if (!response.ok) {
 
-            if (!data.success) {
+            throw new Error(
+                "AI analysis request failed."
+            );
+        }
 
-                container.innerHTML = `
+        const data =
+            await response.json();
 
-                    <div class="ai-error">
+        if (!data.success) {
+
+            container.innerHTML = `
+                <div class="ai-error">
+
+                    <h3>
+                        AI Analysis Failed
+                    </h3>
+
+                    <p>
+                        ${data.message ||
+                        "AI analysis could not be completed."}
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
+
+        const analysis =
+            String(data.analysis || "");
+
+        // ----------------------------------------------------
+        // Clean entire AI response first
+        // ----------------------------------------------------
+
+        const cleanedAnalysis =
+            analysis
+                .replace(/\r/g, "")
+                .replace(/\\\*/g, "")
+                .replace(/\*\*/g, "")
+                .replace(/`/g, "")
+                .replace(/^#{1,6}\s*/gm, "")
+                .replace(/^[-_]{3,}$/gm, "")
+                .trim();
+
+        // ----------------------------------------------------
+        // Extract sections
+        // ----------------------------------------------------
+
+        function extractSection(
+            title,
+            nextTitle
+        ) {
+
+            const normalized =
+                cleanedAnalysis.toUpperCase();
+
+            const start =
+                normalized.indexOf(
+                    title.toUpperCase()
+                );
+
+            if (start === -1) {
+                return "Not available";
+            }
+
+            const contentStart =
+                start + title.length;
+
+            let end =
+                cleanedAnalysis.length;
+
+            if (nextTitle) {
+
+                const nextIndex =
+                    normalized.indexOf(
+                        nextTitle.toUpperCase(),
+                        contentStart
+                    );
+
+                if (nextIndex !== -1) {
+                    end = nextIndex;
+                }
+            }
+
+            return cleanAIText(
+                cleanedAnalysis.substring(
+                    contentStart,
+                    end
+                )
+            );
+        }
+
+        const topRisk =
+            extractSection(
+                "TOP RISK",
+                "RECOVERY OPPORTUNITY"
+            );
+
+        const recoveryOpportunity =
+            extractSection(
+                "RECOVERY OPPORTUNITY",
+                "RECOMMENDED STRATEGY"
+            );
+
+        const recommendedStrategy =
+            extractSection(
+                "RECOMMENDED STRATEGY",
+                "SAFETY DECISION"
+            );
+
+        const safetyDecision =
+            extractSection(
+                "SAFETY DECISION",
+                "EXPLANATION"
+            );
+
+        const explanation =
+            extractSection(
+                "EXPLANATION",
+                null
+            );
+
+        // ----------------------------------------------------
+        // Render AI report
+        // ----------------------------------------------------
+
+        container.innerHTML = `
+
+            <div class="ai-result">
+
+                <div class="ai-result-header">
+
+                    <div>
+
+                        <span class="ai-badge">
+                            GEMINI AI
+                        </span>
 
                         <h3>
-                            ⚠️ AI Analysis Failed
+                            Recovery Intelligence Report
                         </h3>
-
-                        <p>
-                            ${data.message ||
-                            "AI analysis could not be completed."}
-                        </p>
 
                     </div>
 
-                `;
+                    <span class="ai-live">
+                        ● AI Analysis Complete
+                    </span>
 
-                return;
+                </div>
 
-            }
+                <div class="ai-insight-grid">
 
-            const analysis =
-                data.analysis || "";
+                    <div class="ai-insight-card risk-card">
 
-
-            // =========================
-            // Extract Gemini Sections
-            // =========================
-
-            function extractSection(title, nextTitle) {
-
-                const start =
-                    analysis.indexOf(title);
-
-                if (start === -1) {
-
-                    return "Not available";
-
-                }
-
-                const contentStart =
-                    start + title.length;
-
-                let end;
-
-                if (nextTitle) {
-
-                    end =
-                        analysis.indexOf(
-                            nextTitle,
-                            contentStart
-                        );
-
-                }
-
-                if (
-                    end === -1 ||
-                    end === undefined
-                ) {
-
-                    end =
-                        analysis.length;
-
-                }
-
-                return analysis
-
-                    .substring(
-                        contentStart,
-                        end
-                    )
-
-                    .replace(/\*\*/g, "")
-
-                    .replace(/\n+/g, " ")
-
-                    .trim();
-
-            }
-
-
-            const topRisk =
-                extractSection(
-                    "TOP RISK",
-                    "RECOVERY OPPORTUNITY"
-                );
-
-
-            const recoveryOpportunity =
-                extractSection(
-                    "RECOVERY OPPORTUNITY",
-                    "RECOMMENDED STRATEGY"
-                );
-
-
-            const recommendedStrategy =
-                extractSection(
-                    "RECOMMENDED STRATEGY",
-                    "SAFETY DECISION"
-                );
-
-
-            const safetyDecision =
-                extractSection(
-                    "SAFETY DECISION",
-                    "EXPLANATION"
-                );
-
-
-            const explanation =
-                extractSection(
-                    "EXPLANATION",
-                    null
-                );
-
-
-            // =========================
-            // Display AI Analysis
-            // =========================
-
-            container.innerHTML = `
-
-                <div class="ai-result">
-
-                    <div class="ai-result-header">
+                        <div class="insight-icon">
+                            ⚠️
+                        </div>
 
                         <div>
 
-                            <span class="ai-badge">
-                                🤖 GEMINI AI
-                            </span>
+                            <h4>
+                                Top Risk
+                            </h4>
 
-                            <h3>
-                                Recovery Intelligence Report
-                            </h3>
+                            <p>
+                                ${topRisk}
+                            </p>
 
                         </div>
-
-                        <span class="ai-live">
-                            ● AI Analysis Complete
-                        </span>
 
                     </div>
 
 
-                    <div class="ai-insight-grid">
+                    <div class="ai-insight-card recovery-card">
 
-
-                        <div class="ai-insight-card risk-card">
-
-                            <div class="insight-icon">
-                                ⚠️
-                            </div>
-
-                            <div>
-
-                                <h4>
-                                    Top Risk
-                                </h4>
-
-                                <p>
-                                    ${topRisk}
-                                </p>
-
-                            </div>
-
+                        <div class="insight-icon">
+                            💰
                         </div>
 
+                        <div>
 
-                        <div class="ai-insight-card recovery-card">
+                            <h4>
+                                Recovery Opportunity
+                            </h4>
 
-                            <div class="insight-icon">
-                                💰
-                            </div>
-
-                            <div>
-
-                                <h4>
-                                    Recovery Opportunity
-                                </h4>
-
-                                <p>
-                                    ${recoveryOpportunity}
-                                </p>
-
-                            </div>
+                            <p>
+                                ${recoveryOpportunity}
+                            </p>
 
                         </div>
-
-
-                        <div class="ai-insight-card strategy-card">
-
-                            <div class="insight-icon">
-                                🎯
-                            </div>
-
-                            <div>
-
-                                <h4>
-                                    Recommended Strategy
-                                </h4>
-
-                                <p>
-                                    ${recommendedStrategy}
-                                </p>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="ai-insight-card safety-card">
-
-                            <div class="insight-icon">
-                                🛡️
-                            </div>
-
-                            <div>
-
-                                <h4>
-                                    Safety Decision
-                                </h4>
-
-                                <p>
-                                    ${safetyDecision}
-                                </p>
-
-                            </div>
-
-                        </div>
-
 
                     </div>
 
 
-                    <div class="ai-explanation">
+                    <div class="ai-insight-card strategy-card">
 
-                        <h4>
-                            💡 Why Gemini Recommended This
-                        </h4>
+                        <div class="insight-icon">
+                            🎯
+                        </div>
 
-                        <p>
-                            ${explanation}
-                        </p>
+                        <div>
+
+                            <h4>
+                                Recommended Strategy
+                            </h4>
+
+                            <p>
+                                ${recommendedStrategy}
+                            </p>
+
+                        </div>
 
                     </div>
 
 
-                    <div class="simulation-notice">
+                    <div class="ai-insight-card safety-card">
 
-                        <strong>
-                            🛡️ Simulation Mode
-                        </strong>
+                        <div class="insight-icon">
+                            🛡️
+                        </div>
 
-                        <span>
-                            No real payments are processed.
-                            Recovery actions are evaluated
-                            using safety rules and simulated outcomes.
-                        </span>
+                        <div>
+
+                            <h4>
+                                Safety Decision
+                            </h4>
+
+                            <p>
+                                ${safetyDecision}
+                            </p>
+
+                        </div>
 
                     </div>
 
                 </div>
 
-            `;
 
-        })
+                <div class="ai-explanation">
 
-        .catch(error => {
-
-            console.log(
-                "AI analysis error:",
-                error
-            );
-
-            container.innerHTML = `
-
-                <div class="ai-error">
-
-                    <h3>
-                        ⚠️ Unable to Connect to AI
-                    </h3>
+                    <h4>
+                        💡 Why Gemini Recommended This
+                    </h4>
 
                     <p>
-                        Could not connect to the AI analysis server.
+                        ${explanation}
                     </p>
 
                 </div>
 
-            `;
 
-        });
+                <div class="simulation-notice">
 
+                    <strong>
+                        🛡️ Simulation Mode
+                    </strong>
+
+                    <span>
+                        No real payments are processed.
+                        Recovery actions are evaluated
+                        using safety rules and simulated outcomes.
+                    </span>
+
+                </div>
+
+            </div>
+        `;
+
+    }
+    catch (error) {
+
+        console.log(
+            "AI analysis error:",
+            error
+        );
+
+        container.innerHTML = `
+
+            <div class="ai-error">
+
+                <h3>
+                    Unable to Connect to AI
+                </h3>
+
+                <p>
+                    Could not connect to the AI analysis server.
+                </p>
+
+            </div>
+        `;
+    }
 }
 
-
-// =========================
+// ============================================================
 // Execute Single Recovery
-// =========================
+// ============================================================
 
 function executeRecovery(
     paymentId,
     failureReason
 ) {
 
-    const resultContainer =
+    let resultContainer =
         document.getElementById(
             "recovery-result-container"
         );
 
+    if (!resultContainer) {
+
+        resultContainer =
+            document.getElementById(
+                "batch-recovery-result"
+            );
+    }
+
+    // --------------------------------------------------------
+    // If no result container exists, create one
+    // --------------------------------------------------------
+
+    if (!resultContainer) {
+
+        resultContainer =
+            document.createElement("div");
+
+        resultContainer.id =
+            "recovery-result-container";
+
+        resultContainer.className =
+            "recovery-result";
+
+        const failuresContainer =
+            document.getElementById(
+                "failures-container"
+            );
+
+        if (failuresContainer) {
+
+            failuresContainer.prepend(
+                resultContainer
+            );
+        }
+        else {
+
+            document.body.prepend(
+                resultContainer
+            );
+        }
+    }
+
     resultContainer.innerHTML = `
 
         <p>
-            Executing recovery action for ${paymentId}...
+            Executing recovery action for
+            <strong>${paymentId}</strong>...
         </p>
 
     `;
 
+    fetch(
+        RECOVER_URL,
+        {
+            method: "POST",
 
-    fetch(RECOVER_URL, {
+            headers: {
+                "Content-Type":
+                    "application/json"
+            },
 
-        method: "POST",
+            body: JSON.stringify({
 
-        headers: {
-            "Content-Type": "application/json"
-        },
+                payment_id:
+                    paymentId,
 
-        body: JSON.stringify({
+                failure_reason:
+                    failureReason,
 
-            payment_id: paymentId,
+                retry_count:
+                    0,
 
-            failure_reason: failureReason,
+                merchant_approved:
+                    true
+            })
+        }
+    )
+        .then(async response => {
 
-            retry_count: 0,
+            const data =
+                await response.json();
 
-            merchant_approved: true
+            if (!response.ok) {
 
+                throw new Error(
+                    data.message ||
+                    "Recovery request failed."
+                );
+            }
+
+            return data;
         })
-
-    })
-
-        .then(response => response.json())
-
         .then(data => {
 
             if (data.success) {
@@ -744,26 +1868,26 @@ function executeRecovery(
 
                     <p>
                         <strong>Action:</strong>
-                        ${data.action}
+                        ${formatReason(data.action)}
                     </p>
 
                     <p>
                         <strong>Status:</strong>
-                        ${data.status}
+                        ${formatReason(data.status)}
                     </p>
 
                     <p>
                         <strong>Amount:</strong>
-                        ₹${Number(data.amount).toLocaleString("en-IN")}
+                        ${formatCurrency(data.amount)}
                     </p>
 
                     <p>
-                        ${data.message}
+                        ${data.message || ""}
                     </p>
 
                 `;
-
-            } else {
+            }
+            else {
 
                 resultContainer.innerHTML = `
 
@@ -773,24 +1897,24 @@ function executeRecovery(
 
                     <p>
                         <strong>Status:</strong>
-                        ${data.status || "blocked"}
+                        ${formatReason(
+                            data.status || "blocked"
+                        )}
                     </p>
 
                     <p>
-                        ${data.message}
+                        ${data.message ||
+                        "Recovery action was blocked."}
                     </p>
 
                 `;
-
             }
-
 
             loadRecoveryMetrics();
 
             loadAuditTrail();
 
         })
-
         .catch(error => {
 
             console.log(
@@ -805,19 +1929,21 @@ function executeRecovery(
                 </h3>
 
                 <p>
-                    Could not connect to the recovery server.
+                    ${error.message ||
+                    "Could not connect to the recovery server."}
                 </p>
 
             `;
-
         });
-
 }
 
+// Make available to inline HTML onclick
+window.executeRecovery =
+    executeRecovery;
 
-// =========================
+// ============================================================
 // Run Batch Recovery
-// =========================
+// ============================================================
 
 function runBatchRecovery() {
 
@@ -831,23 +1957,22 @@ function runBatchRecovery() {
             "batch-recovery-result"
         );
 
-
-    if (!button || !resultContainer) {
+    if (
+        !button ||
+        !resultContainer
+    ) {
 
         console.log(
             "Batch recovery HTML elements were not found."
         );
 
         return;
-
     }
-
 
     button.disabled = true;
 
     button.textContent =
         "Running Recovery Batch...";
-
 
     resultContainer.innerHTML = `
 
@@ -858,21 +1983,34 @@ function runBatchRecovery() {
 
     `;
 
+    fetch(
+        BATCH_RECOVERY_URL,
+        {
+            method: "POST",
 
-    fetch(BATCH_RECOVERY_URL, {
+            headers: {
+                "Content-Type":
+                    "application/json"
+            },
 
-        method: "POST",
+            body: JSON.stringify({})
+        }
+    )
+        .then(async response => {
 
-        headers: {
-            "Content-Type": "application/json"
-        },
+            const data =
+                await response.json();
 
-        body: JSON.stringify({})
+            if (!response.ok) {
 
-    })
+                throw new Error(
+                    data.message ||
+                    "Batch recovery request failed."
+                );
+            }
 
-        .then(response => response.json())
-
+            return data;
+        })
         .then(data => {
 
             if (data.success) {
@@ -905,17 +2043,17 @@ function runBatchRecovery() {
 
                     <p>
                         <strong>Attempted Amount:</strong>
-                        ₹${Number(data.attempted_amount).toLocaleString("en-IN")}
+                        ${formatCurrency(data.attempted_amount)}
                     </p>
 
                     <p>
                         <strong>Recovered Amount:</strong>
-                        ₹${Number(data.recovered_amount).toLocaleString("en-IN")}
+                        ${formatCurrency(data.recovered_amount)}
                     </p>
 
                     <p>
                         <strong>Not Recovered Amount:</strong>
-                        ₹${Number(data.not_recovered_amount).toLocaleString("en-IN")}
+                        ${formatCurrency(data.not_recovered_amount)}
                     </p>
 
                     <p>
@@ -924,12 +2062,17 @@ function runBatchRecovery() {
                     </p>
 
                     <p>
-                        ${data.message}
+                        ${data.message || ""}
+                    </p>
+
+                    <p>
+                        <strong>Simulation Mode:</strong>
+                        No real payments were processed.
                     </p>
 
                 `;
-
-            } else {
+            }
+            else {
 
                 resultContainer.innerHTML = `
 
@@ -943,11 +2086,7 @@ function runBatchRecovery() {
                     </p>
 
                 `;
-
             }
-
-
-            // Refresh dashboard data
 
             loadPaymentSummary();
 
@@ -956,7 +2095,6 @@ function runBatchRecovery() {
             loadAuditTrail();
 
         })
-
         .catch(error => {
 
             console.log(
@@ -971,253 +2109,418 @@ function runBatchRecovery() {
                 </h3>
 
                 <p>
-                    Could not connect to the recovery server.
+                    ${error.message ||
+                    "Could not connect to the recovery server."}
                 </p>
 
             `;
 
         })
-
         .finally(() => {
 
             button.disabled = false;
 
             button.textContent =
                 "Run Recovery Batch";
-
         });
-
 }
 
-
-// =========================
+// ============================================================
 // Load Recovery Metrics
-// =========================
+// ============================================================
 
-function loadRecoveryMetrics() {
+async function loadRecoveryMetrics() {
 
-    fetch(RECOVERY_METRICS_URL)
+    try {
 
-        .then(response => response.json())
-
-        .then(data => {
-
-            document.getElementById(
-                "recovery-attempts"
-            ).textContent =
-                data.total_recovery_attempts;
-
-
-            document.getElementById(
-                "recovered-transactions"
-            ).textContent =
-                data.recovered_transactions;
-
-
-            document.getElementById(
-                "recovered-amount"
-            ).textContent =
-                "₹" +
-                Number(
-                    data.recovered_amount
-                ).toLocaleString("en-IN");
-
-
-            document.getElementById(
-                "recovery-rate"
-            ).textContent =
-                data.recovery_rate + "%";
-
-
-            // =========================
-            // Recovery Overview
-            // =========================
-
-            document.getElementById(
-                "overview-attempts"
-            ).textContent =
-                data.total_recovery_attempts;
-
-
-            document.getElementById(
-                "overview-recovered-transactions"
-            ).textContent =
-                data.recovered_transactions;
-
-
-            document.getElementById(
-                "overview-recovered-amount"
-            ).textContent =
-                "₹" +
-                Number(
-                    data.recovered_amount
-                ).toLocaleString("en-IN");
-
-
-            document.getElementById(
-                "overview-recovery-rate"
-            ).textContent =
-                data.recovery_rate + "%";
-
-        })
-
-        .catch(error => {
-
-            console.log(
-                "Error loading recovery metrics:",
-                error
+        const response =
+            await fetch(
+                RECOVERY_METRICS_URL +
+                "?t=" +
+                Date.now(),
+                {
+                    cache: "no-store"
+                }
             );
 
-        });
+        if (!response.ok) {
 
+            throw new Error(
+                "Recovery metrics request failed."
+            );
+        }
+
+        const data =
+            await response.json();
+
+        console.log(
+            "Recovery metrics:",
+            data
+        );
+
+        // ----------------------------------------------------
+        // Recovery Performance
+        // ----------------------------------------------------
+
+        setText(
+            "recovery-attempts",
+            data.total_recovery_attempts ?? 0
+        );
+
+        setText(
+            "recovered-transactions",
+            data.recovered_transactions ?? 0
+        );
+
+        setText(
+            "recovered-amount",
+            formatCurrency(
+                data.recovered_amount
+            )
+        );
+
+        setText(
+            "recovery-rate",
+            Number(
+                data.recovery_rate ?? 0
+            ) + "%"
+        );
+
+        // ----------------------------------------------------
+        // Recovery Overview
+        // ----------------------------------------------------
+
+        setText(
+            "overview-attempts",
+            data.total_recovery_attempts ?? 0
+        );
+
+        setText(
+            "overview-recovered-transactions",
+            data.recovered_transactions ?? 0
+        );
+
+        setText(
+            "overview-recovered-amount",
+            formatCurrency(
+                data.recovered_amount
+            )
+        );
+
+        setText(
+            "overview-recovery-rate",
+            Number(
+                data.recovery_rate ?? 0
+            ) + "%"
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "Error loading recovery metrics:",
+            error
+        );
+    }
 }
 
-
-// =========================
+// ============================================================
 // Load Audit Trail
-// =========================
+// ============================================================
 
-function loadAuditTrail() {
+async function loadAuditTrail() {
 
-    fetch(AUDIT_URL)
+    try {
 
-        .then(response => response.json())
+        const [
+            auditResponse,
+            metricsResponse
+        ] = await Promise.all([
 
-        .then(data => {
+            fetch(
+                AUDIT_URL +
+                "?t=" +
+                Date.now(),
+                {
+                    cache: "no-store"
+                }
+            ),
 
-            const container =
-                document.getElementById(
-                    "audit-container"
-                );
+            fetch(
+                RECOVERY_METRICS_URL +
+                "?t=" +
+                Date.now(),
+                {
+                    cache: "no-store"
+                }
+            )
+        ]);
 
-            container.innerHTML = "";
+        if (
+            !auditResponse.ok ||
+            !metricsResponse.ok
+        ) {
 
-
-            if (data.logs.length === 0) {
-
-                container.innerHTML = `
-
-                    <p>
-                        No recovery actions recorded yet.
-                    </p>
-
-                `;
-
-                return;
-
-            }
-
-
-            data.logs.forEach(log => {
-
-                const card =
-                    document.createElement("div");
-
-                card.className =
-                    "audit-card";
-
-
-                card.innerHTML = `
-
-                    <h3>
-                        ${log.action}
-                    </h3>
-
-                    <p>
-                        <strong>Payment ID:</strong>
-                        ${log.payment_id}
-                    </p>
-
-                    <p>
-                        <strong>Status:</strong>
-                        ${log.status}
-                    </p>
-
-                    <p>
-                        <strong>Message:</strong>
-                        ${log.message}
-                    </p>
-
-                    <p>
-                        <strong>Time:</strong>
-                        ${log.timestamp}
-                    </p>
-
-                `;
-
-                container.appendChild(card);
-
-            });
-
-        })
-
-        .catch(error => {
-
-            console.log(
-                "Error loading audit trail:",
-                error
+            throw new Error(
+                "Could not load audit information."
             );
+        }
 
+        const auditData =
+            await auditResponse.json();
+
+        const metricsData =
+            await metricsResponse.json();
+
+        const container =
             document.getElementById(
                 "audit-container"
-            ).innerHTML = `
+            );
+
+        if (!container) {
+            return;
+        }
+
+        const logs =
+            Array.isArray(auditData)
+                ? auditData
+                : (auditData.logs || []);
+
+        // ----------------------------------------------------
+        // Recovery metrics
+        // ----------------------------------------------------
+
+        const totalAttempts =
+            Number(
+                metricsData.total_recovery_attempts || 0
+            );
+
+        const recovered =
+            Number(
+                metricsData.recovered_transactions || 0
+            );
+
+        const notRecovered =
+            Math.max(
+                totalAttempts -
+                recovered,
+                0
+            );
+
+        const approvalRequired =
+            logs.filter(
+                log =>
+                    log.status ===
+                    "approval_required"
+            ).length;
+
+        // ----------------------------------------------------
+        // Update audit summary
+        // ----------------------------------------------------
+
+        setText(
+            "audit-total",
+            totalAttempts
+        );
+
+        setText(
+            "audit-recovered",
+            recovered
+        );
+
+        setText(
+            "audit-not-recovered",
+            notRecovered
+        );
+
+        setText(
+            "audit-approval",
+            approvalRequired
+        );
+
+        // ----------------------------------------------------
+        // Remove AI analysis logs
+        // ----------------------------------------------------
+
+        const recoveryLogs =
+            logs.filter(log => {
+
+                const action =
+                    String(
+                        log.action || ""
+                    ).toLowerCase();
+
+                return (
+                    action !==
+                        "ai_revenue_analysis" &&
+
+                    action !==
+                        "ai_analysis"
+                );
+            });
+
+        // ----------------------------------------------------
+        // Show latest 10 logs
+        // ----------------------------------------------------
+
+        const latestLogs =
+            recoveryLogs
+                .slice()
+                .reverse()
+                .slice(0, 10);
+
+        container.innerHTML = "";
+
+        if (
+            latestLogs.length === 0
+        ) {
+
+            container.innerHTML = `
+
+                <p>
+                    No recovery actions recorded yet.
+                </p>
+
+            `;
+
+            return;
+        }
+
+        latestLogs.forEach(log => {
+
+            const card =
+                document.createElement("div");
+
+            card.className =
+                "audit-card";
+
+            const action =
+                formatReason(
+                    log.action ||
+                    "Recovery Action"
+                );
+
+            const status =
+                formatReason(
+                    log.status ||
+                    "unknown"
+                );
+
+            card.innerHTML = `
+
+                <h3>
+                    ${action}
+                </h3>
+
+                <p>
+                    <strong>Payment ID:</strong>
+                    ${log.payment_id || "N/A"}
+                </p>
+
+                <p>
+                    <strong>Status:</strong>
+                    ${status}
+                </p>
+
+                <p>
+                    <strong>Message:</strong>
+                    ${cleanAIText(
+                        log.message ||
+                        "No message available."
+                    )}
+                </p>
+
+                <p>
+                    <strong>Time:</strong>
+                    ${log.timestamp || "N/A"}
+                </p>
+
+            `;
+
+            container.appendChild(card);
+        });
+
+    }
+    catch (error) {
+
+        console.error(
+            "Error loading audit trail:",
+            error
+        );
+
+        const container =
+            document.getElementById(
+                "audit-container"
+            );
+
+        if (container) {
+
+            container.innerHTML = `
 
                 <p>
                     Unable to load audit logs.
                 </p>
 
             `;
-
-        });
-
+        }
+    }
 }
 
-
-// =========================
+// ============================================================
 // Load Failure Analysis
-// =========================
+// ============================================================
 
-function loadFailureAnalysis() {
+async function loadFailureAnalysis() {
 
-    fetch(FAILURES_URL)
+    try {
 
-        .then(response => response.json())
-
-        .then(data => {
-
-            console.log(
-                "Failure analysis loaded:",
-                data
+        const response =
+            await fetch(
+                FAILURES_URL,
+                {
+                    cache: "no-store"
+                }
             );
 
-        })
+        if (!response.ok) {
 
-        .catch(error => {
-
-            console.log(
-                "Error loading failure analysis:",
-                error
+            throw new Error(
+                "Could not load failure analysis."
             );
+        }
 
-        });
+        const data =
+            await response.json();
 
+        console.log(
+            "Failure analysis loaded:",
+            data
+        );
+
+    }
+    catch (error) {
+
+        console.log(
+            "Error loading failure analysis:",
+            error
+        );
+    }
 }
 
+// ============================================================
+// Initialize Dashboard
+// ============================================================
 
-// =========================
-// Load Dashboard
-// =========================
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
-loadPaymentSummary();
+        setupRazorpayButton();
 
-loadFailedPayments();
+        refreshDashboard();
 
-loadRecommendations();
+        loadAIAnalysis();
 
-loadFailureAnalysis();
-
-loadRecoveryMetrics();
-
-loadAuditTrail();
-
-loadOpportunityChart();
+        loadRazorpayTransactions();
+    }
+);

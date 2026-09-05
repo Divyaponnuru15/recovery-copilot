@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta name="viewport"
@@ -11,29 +10,251 @@
     <title>Recovery Copilot</title>
 
     <link rel="stylesheet" href="style.css">
-
 </head>
-
 
 <body>
 
+<!-- =========================
+     HEADER
+========================== -->
 
-    <h1>Recovery Copilot</h1>
+<header class="topbar">
 
-    <p>
-        AI-powered failed payment recovery dashboard
-    </p>
+    <div class="brand">
+
+        <div class="brand-icon">
+            ↻
+        </div>
+
+        <div>
+            <h1>Recovery Copilot</h1>
+
+            <p>
+                AI-powered revenue recovery for failed payments
+            </p>
+        </div>
+
+    </div>
+
+    <div class="topbar-status">
+
+        <span class="status-dot"></span>
+
+        <span>
+            TEST MODE
+        </span>
+
+    </div>
+
+</header>
 
 
-    <!-- =========================
-         Payment Summary
-    ========================== -->
+<main>
+
+
+<!-- =========================
+     HERO / RAZORPAY CONTROL
+========================== -->
+
+<section class="hero-panel">
+
+    <div class="hero-content">
+
+        <span class="section-badge">
+            PAYMENT RECOVERY ENGINE
+        </span>
+
+        <h2>
+            Recover revenue from failed payments.
+        </h2>
+
+        <p>
+            Connect payment activity, identify why transactions failed,
+            and let the Recovery Copilot recommend safe recovery actions.
+        </p>
+
+        <div class="hero-actions">
+
+            <button
+                class="primary-button"
+                id="razorpay-test-button">
+
+                Test Razorpay Payment
+
+            </button>
+
+            <button
+                class="secondary-button"
+                onclick="document.querySelector('.dataset-upload').scrollIntoView({behavior:'smooth'})">
+
+                Analyze Dataset
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div class="hero-side">
+
+        <div class="hero-side-label">
+            CURRENT MODE
+        </div>
+
+        <div class="hero-side-title">
+            Razorpay Test Environment
+        </div>
+
+        <p>
+            No real money is processed.
+            Recovery actions are simulated.
+        </p>
+
+        <div class="secure-label">
+            🛡️ Safe testing environment
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     PAYMENT DATA
+========================== -->
+
+<section class="dataset-upload">
+
+    <div class="section-header">
+
+        <div>
+
+            <span class="section-badge">
+                📁 PAYMENT DATA
+            </span>
+
+            <h2>
+                Payment Data
+            </h2>
+
+            <p>
+                Analyze payment activity from Razorpay Test Mode,
+                a CSV dataset, or the built-in demo.
+            </p>
+
+        </div>
+
+        <div class="simulation-badge">
+            🛡️ TEST / SIMULATION
+        </div>
+
+    </div>
+
+
+    <div class="upload-container">
+
+        <div class="upload-box">
+
+            <label for="payment-csv">
+                📄 Choose Payment CSV
+            </label>
+
+            <input
+                type="file"
+                id="payment-csv"
+                accept=".csv">
+
+            <button
+                id="upload-button"
+                onclick="uploadPaymentCSV()">
+
+                Upload Dataset
+
+            </button>
+
+            <button
+                id="reset-demo-button"
+                onclick="resetDemoDataset()">
+
+                Use Demo Dataset
+
+            </button>
+
+        </div>
+
+
+        <div class="dataset-status">
+
+            <div>
+
+                <span>
+                    CURRENT DATA SOURCE
+                </span>
+
+                <strong id="dataset-type">
+                    Demo Dataset
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>
+                    PAYMENTS
+                </span>
+
+                <strong id="dataset-total">
+                    500
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div
+            id="upload-message"
+            class="upload-message">
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     KEY METRICS
+========================== -->
+
+<section class="metrics-section">
+
+    <div class="section-heading">
+
+        <div>
+
+            <span class="section-badge">
+                💰 REVENUE INTELLIGENCE
+            </span>
+
+            <h2>
+                Payment Health
+            </h2>
+
+        </div>
+
+    </div>
+
 
     <div class="dashboard">
 
+
         <div class="card">
 
-            <h3>Total Payments</h3>
+            <span class="metric-label">
+                TOTAL PAYMENTS
+            </span>
 
             <p id="total-payments">
                 0
@@ -44,7 +265,9 @@
 
         <div class="card">
 
-            <h3>Successful Payments</h3>
+            <span class="metric-label">
+                SUCCESSFUL
+            </span>
 
             <p id="successful-payments">
                 0
@@ -55,7 +278,9 @@
 
         <div class="card">
 
-            <h3>Failed Payments</h3>
+            <span class="metric-label">
+                FAILED
+            </span>
 
             <p id="failed-payments">
                 0
@@ -66,7 +291,9 @@
 
         <div class="card">
 
-            <h3>Failure Rate</h3>
+            <span class="metric-label">
+                FAILURE RATE
+            </span>
 
             <p id="failure-rate">
                 0%
@@ -75,9 +302,11 @@
         </div>
 
 
-        <div class="card">
+        <div class="card highlight-card">
 
-            <h3>Revenue at Risk</h3>
+            <span class="metric-label">
+                REVENUE AT RISK
+            </span>
 
             <p id="revenue-at-risk">
                 ₹0
@@ -86,9 +315,11 @@
         </div>
 
 
-        <div class="card">
+        <div class="card highlight-card">
 
-            <h3>Potential Recovery</h3>
+            <span class="metric-label">
+                POTENTIAL RECOVERY
+            </span>
 
             <p id="potential-recovery">
                 ₹0
@@ -96,282 +327,282 @@
 
         </div>
 
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     RECOVERY OVERVIEW
+========================== -->
+
+<section class="recovery-overview">
+
+    <div class="overview-header">
+
+        <div>
+
+            <span class="overview-badge">
+                🎯 RECOVERY INTELLIGENCE
+            </span>
+
+            <h2>
+                Recovery Overview
+            </h2>
+
+            <p>
+                Track simulated recovery performance across failed payments.
+            </p>
+
+        </div>
+
+        <div class="simulation-badge">
+            🛡️ SIMULATION MODE
+        </div>
+
     </div>
 
 
-    <!-- =========================
-         Recovery Overview
-    ========================== -->
+    <div class="overview-metrics">
 
-    <section class="recovery-overview">
 
-        <div class="overview-header">
+        <div class="overview-card">
 
-            <div>
-
-                <span class="overview-badge">
-                    💰 RECOVERY INTELLIGENCE
-                </span>
-
-                <h2>
-                    Recovery Overview
-                </h2>
-
-                <p>
-                    Track simulated revenue recovery from failed payments.
-                </p>
-
-            </div>
-
-
-            <div class="simulation-badge">
-                🛡️ Simulation Mode
-            </div>
-
-        </div>
-
-
-        <div class="overview-metrics">
-
-
-            <div class="overview-card">
-
-                <span class="overview-icon">
-                    🎯
-                </span>
-
-                <div>
-
-                    <h3>
-                        Recovery Attempts
-                    </h3>
-
-                    <p id="overview-attempts">
-                        0
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="overview-card">
-
-                <span class="overview-icon">
-                    ✅
-                </span>
-
-                <div>
-
-                    <h3>
-                        Recovered Transactions
-                    </h3>
-
-                    <p id="overview-recovered-transactions">
-                        0
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="overview-card">
-
-                <span class="overview-icon">
-                    💰
-                </span>
-
-                <div>
-
-                    <h3>
-                        Recovered Amount
-                    </h3>
-
-                    <p id="overview-recovered-amount">
-                        ₹0
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="overview-card">
-
-                <span class="overview-icon">
-                    📈
-                </span>
-
-                <div>
-
-                    <h3>
-                        Recovery Rate
-                    </h3>
-
-                    <p id="overview-recovery-rate">
-                        0%
-                    </p>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         Recovery Opportunity
-    ========================== -->
-
-    <section class="recovery-opportunity">
-
-
-        <div class="section-header">
-
-
-            <div>
-
-                <span class="section-badge">
-                    💰 REVENUE RISK
-                </span>
-
-                <h2>
-                    Recovery Opportunity
-                </h2>
-
-                <p>
-                    Revenue at risk grouped by payment failure reason.
-                </p>
-
-            </div>
-
-
-            <div class="simulation-badge">
-                🛡️ Simulation Data
-            </div>
-
-
-        </div>
-
-
-        <!-- Dynamic chart -->
-
-        <div
-            class="opportunity-chart"
-            id="opportunity-chart">
-
-            <p>
-                Loading recovery opportunity...
-            </p>
-
-        </div>
-
-
-        <div class="opportunity-insight">
-
-            <span>
-                💡
+            <span class="overview-icon">
+                ↻
             </span>
 
-            <p>
-
-                <strong>
-                    Key insight:
-                </strong>
-
-                Bank timeouts represent the largest revenue risk,
-                while technical timeout failures are the safest
-                candidates for automated recovery.
-
-            </p>
-
-        </div>
-
-
-    </section>
-
-
-    <!-- =========================
-         Failure Analysis
-    ========================== -->
-
-    <section class="failures">
-
-        <h2>
-            Failure Analysis
-        </h2>
-
-
-        <div id="failures-container">
-
-            <p>
-                Loading failure analysis...
-            </p>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         Recovery Recommendations
-    ========================== -->
-
-    <section class="recommendations">
-
-        <h2>
-            Recovery Recommendations
-        </h2>
-
-
-        <div id="recommendations-container">
-
-            <p>
-                Loading recommendations...
-            </p>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         AI Recovery Analysis
-    ========================== -->
-
-    <section class="ai-analysis">
-
-
-        <div class="ai-header">
-
-
             <div>
 
-                <span class="ai-badge">
-                    🤖 GEMINI AI
+                <span class="metric-label">
+                    ATTEMPTS
                 </span>
 
-
-                <h2>
-                    AI Recovery Analysis
-                </h2>
-
-
-                <p>
-                    AI analyzes failed payment patterns and
-                    recommends safe recovery strategies.
+                <p id="overview-attempts">
+                    0
                 </p>
 
             </div>
 
+        </div>
 
-            <div class="simulation-badge">
-                🛡️ Simulation Mode
+
+        <div class="overview-card">
+
+            <span class="overview-icon">
+                ✓
+            </span>
+
+            <div>
+
+                <span class="metric-label">
+                    RECOVERED
+                </span>
+
+                <p id="overview-recovered-transactions">
+                    0
+                </p>
+
             </div>
 
+        </div>
+
+
+        <div class="overview-card">
+
+            <span class="overview-icon">
+                ₹
+            </span>
+
+            <div>
+
+                <span class="metric-label">
+                    RECOVERED AMOUNT
+                </span>
+
+                <p id="overview-recovered-amount">
+                    ₹0
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="overview-card">
+
+            <span class="overview-icon">
+                %
+            </span>
+
+            <div>
+
+                <span class="metric-label">
+                    RECOVERY RATE
+                </span>
+
+                <p id="overview-recovery-rate">
+                    0%
+                </p>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     RECOVERY OPPORTUNITY
+========================== -->
+
+<section class="recovery-opportunity">
+
+    <div class="section-header">
+
+        <div>
+
+            <span class="section-badge">
+                ⚠️ REVENUE RISK
+            </span>
+
+            <h2>
+                Where Revenue Is At Risk
+            </h2>
+
+            <p>
+                Identify the failure types creating the largest recovery opportunities.
+            </p>
+
+        </div>
+
+        <div class="simulation-badge">
+            🛡️ ANALYTICS
+        </div>
+
+    </div>
+
+
+    <div
+        class="opportunity-chart"
+        id="opportunity-chart">
+
+        <p>
+            Loading recovery opportunity...
+        </p>
+
+    </div>
+
+
+    <div class="opportunity-insight">
+
+        <span>
+            💡
+        </span>
+
+        <p>
+
+            <strong>
+                Key insight:
+            </strong>
+
+            Bank timeouts represent the largest revenue risk,
+            while technical timeout failures are the safest
+            candidates for automated recovery.
+
+        </p>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     RECOVERY RECOMMENDATIONS
+========================== -->
+
+<section class="recommendations">
+
+    <div class="section-header">
+
+        <div>
+
+            <span class="section-badge">
+                🎯 RECOVERY PLAYBOOK
+            </span>
+
+            <h2>
+                Recommended Actions
+            </h2>
+
+            <p>
+                The safest recovery action for each failure pattern.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div id="recommendations-container">
+
+        <p>
+            Loading recommendations...
+        </p>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     AI ANALYSIS
+========================== -->
+
+<section class="ai-analysis">
+
+    <div class="ai-header">
+
+        <div>
+
+            <span class="ai-badge">
+                🤖 GEMINI AI
+            </span>
+
+            <h2>
+                AI Recovery Decision
+            </h2>
+
+            <p>
+                Gemini analyzes payment failures and explains
+                which recovery strategies are safest.
+            </p>
+
+        </div>
+
+        <div class="simulation-badge">
+            🛡️ AI + SAFETY CONTROL
+        </div>
+
+    </div>
+
+
+    <div class="ai-control">
+
+        <div>
+
+            <strong>
+                Recovery Copilot
+            </strong>
+
+            <p>
+                Analyze the current payment dataset and generate
+                a recovery strategy.
+            </p>
 
         </div>
 
@@ -384,204 +615,345 @@
 
         </button>
 
-
-        <div id="ai-analysis-container">
-
-
-            <div class="ai-empty">
+    </div>
 
 
-                <div class="ai-empty-icon">
-                    ✨
-                </div>
+    <div id="ai-analysis-container">
 
+        <div class="ai-empty">
 
-                <h3>
-                    Ready for AI Analysis
-                </h3>
-
-
-                <p>
-                    Click the button to let Gemini analyze
-                    the failed payment patterns.
-                </p>
-
-
+            <div class="ai-empty-icon">
+                ✨
             </div>
 
-
-        </div>
-
-
-    </section>
-
-
-    <!-- =========================
-         Recovery Result
-    ========================== -->
-
-    <section class="recovery-result">
-
-
-        <h2>
-            Recovery Result
-        </h2>
-
-
-        <div id="recovery-result-container">
+            <h3>
+                Ready for AI Analysis
+            </h3>
 
             <p>
-                No recovery action executed yet.
+                Run the analysis to identify the highest-risk
+                failures and safest recovery actions.
             </p>
 
         </div>
 
+    </div>
 
-    </section>
-
-
-    <!-- =========================
-         Batch Recovery
-    ========================== -->
-
-    <section class="batch-recovery">
+</section>
 
 
-        <h2>
-            AI Recovery Control
-        </h2>
+<!-- =========================
+     RECOVERY CONTROL
+========================== -->
 
+<section class="batch-recovery">
+
+    <div class="section-header">
+
+        <div>
+
+            <span class="section-badge">
+                ⚙️ RECOVERY CONTROL
+            </span>
+
+            <h2>
+                Execute Recovery
+            </h2>
+
+            <p>
+                Run bounded recovery actions using safety rules,
+                merchant approval and simulation mode.
+            </p>
+
+        </div>
+
+        <div class="simulation-badge">
+            🛡️ NO REAL MONEY
+        </div>
+
+    </div>
+
+
+    <div class="recovery-control-warning">
+
+        <span>
+            🛡️
+        </span>
+
+        <div>
+
+            <strong>
+                Controlled Recovery
+            </strong>
+
+            <p>
+                Recovery actions are limited by safety rules.
+                No payment amount is changed and no real payment
+                is processed.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <button
+        id="batch-recovery-button"
+        onclick="runBatchRecovery()">
+
+        Run Recovery Batch
+
+    </button>
+
+
+    <div id="batch-recovery-result">
 
         <p>
-            Run recovery actions on eligible failed payments
-            using safety rules and simulation mode.
+            No batch recovery executed yet.
         </p>
 
+    </div>
 
-        <button
-            id="batch-recovery-button"
-            onclick="runBatchRecovery()">
-
-            Run Recovery Batch
-
-        </button>
+</section>
 
 
-        <div id="batch-recovery-result">
+<!-- =========================
+     RECOVERY PERFORMANCE
+========================== -->
+
+<section class="recovery-performance">
+
+    <div class="section-header">
+
+        <div>
+
+            <span class="section-badge">
+                📈 PERFORMANCE
+            </span>
+
+            <h2>
+                Recovery Performance
+            </h2>
 
             <p>
-                No batch recovery executed yet.
+                Measure how much failed revenue was recovered.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="recovery-metrics">
+
+
+        <div class="metric-card">
+
+            <span class="metric-label">
+                RECOVERY ATTEMPTS
+            </span>
+
+            <p id="recovery-attempts">
+                0
             </p>
 
         </div>
 
 
-    </section>
+        <div class="metric-card">
 
+            <span class="metric-label">
+                RECOVERED TRANSACTIONS
+            </span>
 
-    <!-- =========================
-         Recovery Performance
-    ========================== -->
-
-    <section class="recovery-performance">
-
-
-        <h2>
-            Recovery Performance
-        </h2>
-
-
-        <div class="recovery-metrics">
-
-
-            <div class="metric-card">
-
-                <h3>
-                    Recovery Attempts
-                </h3>
-
-                <p id="recovery-attempts">
-                    0
-                </p>
-
-            </div>
-
-
-            <div class="metric-card">
-
-                <h3>
-                    Recovered Transactions
-                </h3>
-
-                <p id="recovered-transactions">
-                    0
-                </p>
-
-            </div>
-
-
-            <div class="metric-card">
-
-                <h3>
-                    Recovered Amount
-                </h3>
-
-                <p id="recovered-amount">
-                    ₹0
-                </p>
-
-            </div>
-
-
-            <div class="metric-card">
-
-                <h3>
-                    Recovery Rate
-                </h3>
-
-                <p id="recovery-rate">
-                    0%
-                </p>
-
-            </div>
-
-
-        </div>
-
-
-    </section>
-
-
-    <!-- =========================
-         Audit Trail
-    ========================== -->
-
-    <section class="audit">
-
-
-        <h2>
-            Audit Trail
-        </h2>
-
-
-        <div id="audit-container">
-
-            <p>
-                Loading audit logs...
+            <p id="recovered-transactions">
+                0
             </p>
 
         </div>
 
 
-    </section>
+        <div class="metric-card">
+
+            <span class="metric-label">
+                RECOVERED AMOUNT
+            </span>
+
+            <p id="recovered-amount">
+                ₹0
+            </p>
+
+        </div>
 
 
-    <!-- =========================
-         JavaScript
-    ========================== -->
+        <div class="metric-card">
 
-    <script src="script.js"></script>
+            <span class="metric-label">
+                RECOVERY RATE
+            </span>
 
+            <p id="recovery-rate">
+                0%
+            </p>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     AUDIT TRAIL
+========================== -->
+
+<section class="audit">
+
+    <div class="section-header">
+
+        <div>
+
+            <span class="section-badge">
+                🛡️ SAFETY & COMPLIANCE
+            </span>
+
+            <h2>
+                Decision Audit Trail
+            </h2>
+
+            <p>
+                Every recovery decision and action is recorded
+                for transparency and compliance.
+            </p>
+
+        </div>
+
+        <div class="simulation-badge">
+            🛡️ AUDIT LOG
+        </div>
+
+    </div>
+
+
+    <div class="audit-summary">
+
+
+        <div class="audit-card">
+
+            <span>
+                📋
+            </span>
+
+            <div>
+
+                <span class="metric-label">
+                    TOTAL ACTIONS
+                </span>
+
+                <p id="audit-total">
+                    0
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="audit-card">
+
+            <span>
+                ✓
+            </span>
+
+            <div>
+
+                <span class="metric-label">
+                    RECOVERED
+                </span>
+
+                <p id="audit-recovered">
+                    0
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="audit-card">
+
+            <span>
+                ×
+            </span>
+
+            <div>
+
+                <span class="metric-label">
+                    NOT RECOVERED
+                </span>
+
+                <p id="audit-not-recovered">
+                    0
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="audit-card">
+
+            <span>
+                !
+            </span>
+
+            <div>
+
+                <span class="metric-label">
+                    APPROVAL REQUIRED
+                </span>
+
+                <p id="audit-approval">
+                    0
+                </p>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <div class="audit-log-header">
+
+        <h3>
+            Latest Recovery Decisions
+        </h3>
+
+        <span>
+            Showing latest 10
+        </span>
+
+    </div>
+
+
+    <div id="audit-container">
+
+        <p>
+            No recovery actions recorded yet.
+        </p>
+
+    </div>
+
+</section>
+
+
+</main>
+
+
+<script src="script.js"></script>
 
 </body>
 
